@@ -559,8 +559,11 @@
             <!-- Camera View -->
             <div id="camera-view">
               <video id="camera-video" autoplay playsinline muted class="w-full rounded-xl mb-4" style="object-fit: cover; max-height: 65vh; transform: scaleX(1);"></video>
-              <div id="location-status" class="text-sm text-slate-600 mb-3 flex items-center gap-2">
+              <div id="location-status" class="text-sm text-slate-600 mb-2 flex items-center gap-2">
                 <span class="animate-pulse">📍</span> Mengambil lokasi...
+              </div>
+              <div id="orientation-status" class="text-sm text-blue-600 mb-3 flex items-center gap-2">
+                <span>📱</span> <span id="orientation-text">Mendeteksi orientasi...</span>
               </div>
               <div class="flex gap-3">
                 <button onclick="capturePhoto()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
@@ -736,6 +739,8 @@
     let cameraStream = null;
     let currentLocation = { address: 'Mengambil lokasi...' };
     let pendingPhotoData = null; // Temporary store for photo before confirmation
+    let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 }; // Gyroscope data
+    let isGyroAvailable = false;
     
     function openCamera() {
       const modal = document.getElementById('camera-modal');
@@ -801,6 +806,9 @@
           // Show camera view, hide preview
           showCameraView();
           
+          // Start gyroscope/device orientation detection
+          startGyroscope();
+          
           // Listen for orientation changes and restart camera
           window.cameraOrientationHandler = () => {
             if (cameraStream) {
@@ -816,6 +824,89 @@
         .catch(err => {
           showToast('Tidak dapat mengakses kamera: ' + err.message, 'error');
         });
+    }
+    
+    // Gyroscope functions for detecting device rotation
+    function startGyroscope() {
+      // Try DeviceOrientationEvent first
+      if (window.DeviceOrientationEvent) {
+        // For iOS 13+ we need to request permission
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+              if (permissionState === 'granted') {
+                window.addEventListener('deviceorientation', handleOrientation, true);
+                isGyroAvailable = true;
+              }
+            })
+            .catch(console.error);
+        } else {
+          // Non iOS 13+ devices
+          window.addEventListener('deviceorientation', handleOrientation, true);
+          isGyroAvailable = true;
+        }
+      }
+    }
+    
+    function stopGyroscope() {
+      window.removeEventListener('deviceorientation', handleOrientation, true);
+      isGyroAvailable = false;
+    }
+    
+    function handleOrientation(event) {
+      deviceOrientation = {
+        alpha: event.alpha || 0, // compass direction
+        beta: event.beta || 0,   // front-back tilt (-180 to 180)
+        gamma: event.gamma || 0  // left-right tilt (-90 to 90)
+      };
+      
+      // Update orientation indicator
+      updateOrientationStatus();
+    }
+    
+    function updateOrientationStatus() {
+      const orientationText = document.getElementById('orientation-text');
+      if (!orientationText) return;
+      
+      const rotation = getDeviceRotation();
+      
+      if (rotation === 90) {
+        orientationText.textContent = '🔄 Landscape (kiri) - Foto akan dirotasi';
+        orientationText.parentElement.classList.remove('text-blue-600');
+        orientationText.parentElement.classList.add('text-green-600');
+      } else if (rotation === -90) {
+        orientationText.textContent = '🔄 Landscape (kanan) - Foto akan dirotasi';
+        orientationText.parentElement.classList.remove('text-blue-600');
+        orientationText.parentElement.classList.add('text-green-600');
+      } else if (rotation === 180) {
+        orientationText.textContent = '⚠️ HP terbalik';
+        orientationText.parentElement.classList.remove('text-green-600');
+        orientationText.parentElement.classList.add('text-orange-600');
+      } else {
+        orientationText.textContent = '📱 Portrait (normal)';
+        orientationText.parentElement.classList.remove('text-green-600', 'text-orange-600');
+        orientationText.parentElement.classList.add('text-blue-600');
+      }
+    }
+    
+    // Determine photo orientation based on gyroscope
+    function getDeviceRotation() {
+      const gamma = deviceOrientation.gamma; // left-right tilt
+      const beta = deviceOrientation.beta;   // front-back tilt
+      
+      // gamma: -90 to 90
+      // When holding phone normally (portrait): gamma close to 0
+      // When rotated left (landscape, home button right): gamma close to 90
+      // When rotated right (landscape, home button left): gamma close to -90
+      
+      if (gamma > 45) {
+        return 90; // Landscape - rotated left (home button on right)
+      } else if (gamma < -45) {
+        return -90; // Landscape - rotated right (home button on left)
+      } else if (beta < -45) {
+        return 180; // Upside down
+      }
+      return 0; // Portrait normal
     }
     
     function showCameraView() {
@@ -866,6 +957,9 @@
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       
+      // Stop gyroscope
+      stopGyroscope();
+      
       // Remove orientation listener
       if (window.cameraOrientationHandler) {
         screen.orientation?.removeEventListener('change', window.cameraOrientationHandler);
@@ -882,20 +976,44 @@
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
       
-      // Detect current device orientation
+      // Get device rotation from gyroscope
+      const gyroRotation = isGyroAvailable ? getDeviceRotation() : 0;
+      
+      // Also check screen orientation as fallback
       const screenOrientation = screen.orientation?.angle || window.orientation || 0;
-      const isScreenLandscape = Math.abs(screenOrientation) === 90 || Math.abs(screenOrientation) === 270 || window.innerWidth > window.innerHeight;
       
-      // Video orientation from camera
-      const isVideoLandscape = videoWidth > videoHeight;
+      // Determine if we need to rotate the image
+      // gyroRotation: 90 = landscape left, -90 = landscape right, 0 = portrait
+      const needsRotation = Math.abs(gyroRotation) === 90;
       
-      console.log(`Video: ${videoWidth}x${videoHeight}, Screen orientation: ${screenOrientation}, Screen landscape: ${isScreenLandscape}, Video landscape: ${isVideoLandscape}`);
+      console.log(`Video: ${videoWidth}x${videoHeight}, Gyro rotation: ${gyroRotation}°, Screen: ${screenOrientation}°, Needs rotation: ${needsRotation}`);
       
-      // Simply use the video as-is - modern browsers handle orientation correctly
-      // The key is to match the output to how user is holding the phone
-      canvas.width = videoWidth;
-      canvas.height = videoHeight;
-      ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+      if (needsRotation) {
+        // For landscape photos, we need to rotate the canvas
+        // Swap width and height
+        canvas.width = videoHeight;
+        canvas.height = videoWidth;
+        
+        ctx.save();
+        
+        if (gyroRotation === 90) {
+          // Rotated left (home button on right) - rotate 90° clockwise
+          ctx.translate(canvas.width, 0);
+          ctx.rotate(Math.PI / 2);
+        } else if (gyroRotation === -90) {
+          // Rotated right (home button on left) - rotate 90° counter-clockwise
+          ctx.translate(0, canvas.height);
+          ctx.rotate(-Math.PI / 2);
+        }
+        
+        ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+        ctx.restore();
+      } else {
+        // Portrait - use video as-is
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+        ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+      }
       
       // Add watermark (adapts to final canvas orientation)
       addWatermark(ctx, canvas.width, canvas.height);
@@ -1677,5 +1795,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b61f676d53c4acd',t:'MTc2NzEwMjE3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b61fae604084acd',t:'MTc2NzEwMjM1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
