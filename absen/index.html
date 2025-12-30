@@ -798,92 +798,171 @@
     // Device orientation using accelerometer (works even when screen rotation is locked)
     let deviceOrientation = 'portrait'; // 'portrait' or 'landscape'
     let orientationHandler = null;
-    let useGyroscope = false;
+    let motionHandler = null;
+    let useAccelerometer = false;
+    let sensorMethod = 'screen'; // 'accelerometer', 'gyroscope', or 'screen'
+    
+    // Accelerometer values for smoothing
+    let accelX = 0, accelY = 0, accelZ = 0;
+    const smoothingFactor = 0.3; // Lower = more smooth but slower response
     
     function startOrientationDetection() {
-      // Try to use DeviceOrientation API (accelerometer/gyroscope)
-      if (window.DeviceOrientationEvent) {
+      // Try DeviceMotion first (accelerometer - most reliable for orientation lock)
+      if (window.DeviceMotionEvent) {
         // Check if we need permission (iOS 13+)
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-          // iOS 13+ requires permission
-          DeviceOrientationEvent.requestPermission()
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+          DeviceMotionEvent.requestPermission()
             .then(response => {
               if (response === 'granted') {
-                useGyroscope = true;
                 startAccelerometerDetection();
               } else {
-                // Fallback to screen dimensions
-                useGyroscope = false;
-                updateOrientationDisplay();
+                tryDeviceOrientation();
               }
             })
             .catch(() => {
-              useGyroscope = false;
-              updateOrientationDisplay();
+              tryDeviceOrientation();
             });
         } else {
-          // Non-iOS or older iOS - try directly
-          useGyroscope = true;
           startAccelerometerDetection();
         }
       } else {
-        // No DeviceOrientation support - fallback
-        useGyroscope = false;
-        updateOrientationDisplay();
+        tryDeviceOrientation();
       }
       
       // Also listen to resize as backup
       window.addEventListener('resize', updateOrientationDisplay);
     }
     
+    function tryDeviceOrientation() {
+      if (window.DeviceOrientationEvent) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          DeviceOrientationEvent.requestPermission()
+            .then(response => {
+              if (response === 'granted') {
+                startGyroscopeDetection();
+              } else {
+                sensorMethod = 'screen';
+                updateOrientationDisplay();
+              }
+            })
+            .catch(() => {
+              sensorMethod = 'screen';
+              updateOrientationDisplay();
+            });
+        } else {
+          startGyroscopeDetection();
+        }
+      } else {
+        sensorMethod = 'screen';
+        updateOrientationDisplay();
+      }
+    }
+    
     function startAccelerometerDetection() {
       let lastUpdate = 0;
-      const updateInterval = 100; // Update every 100ms max
+      const updateInterval = 50; // Update every 50ms for smoother detection
+      let dataReceived = false;
+      
+      motionHandler = function(event) {
+        const now = Date.now();
+        if (now - lastUpdate < updateInterval) return;
+        lastUpdate = now;
+        
+        // Get accelerometer data (includes gravity)
+        const accel = event.accelerationIncludingGravity;
+        
+        if (!accel || accel.x === null || accel.y === null) {
+          if (!dataReceived) {
+            // No data received, try gyroscope instead
+            window.removeEventListener('devicemotion', motionHandler);
+            tryDeviceOrientation();
+          }
+          return;
+        }
+        
+        dataReceived = true;
+        useAccelerometer = true;
+        sensorMethod = 'accelerometer';
+        
+        // Apply smoothing to reduce noise
+        accelX = accelX * (1 - smoothingFactor) + accel.x * smoothingFactor;
+        accelY = accelY * (1 - smoothingFactor) + accel.y * smoothingFactor;
+        accelZ = accelZ * (1 - smoothingFactor) + accel.z * smoothingFactor;
+        
+        // Determine orientation based on accelerometer
+        // In portrait: Y axis has gravity (~9.8 or ~-9.8)
+        // In landscape: X axis has gravity (~9.8 or ~-9.8)
+        
+        const absX = Math.abs(accelX);
+        const absY = Math.abs(accelY);
+        
+        // Use threshold to determine orientation
+        // Landscape when X gravity > Y gravity with some margin
+        if (absX > absY + 1.5) {
+          deviceOrientation = 'landscape';
+        } else if (absY > absX + 1.5) {
+          deviceOrientation = 'portrait';
+        }
+        // If difference is small, keep current state to avoid flickering
+        
+        updateOrientationDisplay();
+      };
+      
+      window.addEventListener('devicemotion', motionHandler);
+      
+      // Timeout to check if accelerometer is working
+      setTimeout(() => {
+        if (!dataReceived) {
+          window.removeEventListener('devicemotion', motionHandler);
+          tryDeviceOrientation();
+        }
+      }, 1000);
+    }
+    
+    function startGyroscopeDetection() {
+      let lastUpdate = 0;
+      const updateInterval = 100;
+      let dataReceived = false;
       
       orientationHandler = function(event) {
         const now = Date.now();
         if (now - lastUpdate < updateInterval) return;
         lastUpdate = now;
         
-        // Get accelerometer data
-        // beta: front-back tilt (-180 to 180)
-        // gamma: left-right tilt (-90 to 90)
-        const beta = event.beta;   // Front-back tilt
-        const gamma = event.gamma; // Left-right tilt
+        const beta = event.beta;
+        const gamma = event.gamma;
         
         if (beta === null || gamma === null) {
-          useGyroscope = false;
-          updateOrientationDisplay();
+          if (!dataReceived) {
+            sensorMethod = 'screen';
+            updateOrientationDisplay();
+          }
           return;
         }
         
-        // Determine orientation based on accelerometer
-        // When phone is held normally (portrait): |gamma| is small, |beta| is around 45-90
-        // When phone is rotated (landscape): |gamma| is large (close to 90 or -90)
+        dataReceived = true;
+        useAccelerometer = true;
+        sensorMethod = 'gyroscope';
         
         const absGamma = Math.abs(gamma);
-        const absBeta = Math.abs(beta);
         
-        // If gamma (left-right tilt) is greater than 45 degrees, it's landscape
-        // Also check that beta is reasonable (phone is being held, not flat)
-        if (absGamma > 45 && absBeta < 135) {
+        if (absGamma > 45) {
           deviceOrientation = 'landscape';
         } else if (absGamma < 35) {
           deviceOrientation = 'portrait';
         }
-        // Between 35-45 degrees, keep previous state to avoid flickering
         
         updateOrientationDisplay();
       };
       
       window.addEventListener('deviceorientation', orientationHandler);
       
-      // Initial check after a short delay
       setTimeout(() => {
-        if (!useGyroscope || deviceOrientation === null) {
+        if (!dataReceived) {
+          sensorMethod = 'screen';
           updateOrientationDisplay();
         }
-      }, 500);
+      }, 1000);
     }
     
     function stopOrientationDetection() {
@@ -892,10 +971,16 @@
         window.removeEventListener('deviceorientation', orientationHandler);
         orientationHandler = null;
       }
+      if (motionHandler) {
+        window.removeEventListener('devicemotion', motionHandler);
+        motionHandler = null;
+      }
+      useAccelerometer = false;
+      sensorMethod = 'screen';
     }
     
     function isLandscapeMode() {
-      if (useGyroscope) {
+      if (useAccelerometer) {
         return deviceOrientation === 'landscape';
       }
       // Fallback: check screen dimensions
@@ -912,13 +997,22 @@
       // Remove all color classes first
       orientationStatus.classList.remove('text-blue-600', 'text-green-600', 'text-orange-600');
       
-      const sensorType = useGyroscope ? '🔄 Gyroscope' : '📐 Screen';
+      let sensorIcon = '📐';
+      let sensorLabel = 'Screen';
+      
+      if (sensorMethod === 'accelerometer') {
+        sensorIcon = '📱';
+        sensorLabel = 'Accelerometer';
+      } else if (sensorMethod === 'gyroscope') {
+        sensorIcon = '🔄';
+        sensorLabel = 'Gyroscope';
+      }
       
       if (landscape) {
-        orientationText.textContent = `${sensorType}: Mode Landscape - Foto Horizontal 📷`;
+        orientationText.textContent = `${sensorIcon} ${sensorLabel}: Mode Landscape - Foto Horizontal 📷`;
         orientationStatus.classList.add('text-green-600');
       } else {
-        orientationText.textContent = `${sensorType}: Mode Portrait - Foto Vertikal 📷`;
+        orientationText.textContent = `${sensorIcon} ${sensorLabel}: Mode Portrait - Foto Vertikal 📷`;
         orientationStatus.classList.add('text-blue-600');
       }
     }
@@ -1793,5 +1887,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6211ab91d59509',t:'MTc2NzEwMzI4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b621f8c51c6e77c',t:'MTc2NzEwMzg1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
