@@ -862,6 +862,32 @@
       showCameraView();
     }
     
+    // Logo image for watermark
+    let logoImage = null;
+    const logoUrl = 'https://lh3.googleusercontent.com/d/1zaavYZSem-yNHztE724qeIAWw9uGJgen';
+    
+    function loadLogoImage() {
+      return new Promise((resolve) => {
+        if (logoImage) {
+          resolve(logoImage);
+          return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          logoImage = img;
+          resolve(img);
+        };
+        img.onerror = () => {
+          resolve(null);
+        };
+        img.src = logoUrl;
+      });
+    }
+    
+    // Preload logo on page load
+    loadLogoImage();
+    
     function addWatermark(ctx, width, height) {
       const now = getLocalTime();
       
@@ -873,10 +899,11 @@
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const timeStr = `${hours}:${minutes}`;
       
-      // Format date
+      // Format date and day separately
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-      const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      const dayStr = days[now.getDay()];
       
       // Location
       const locationStr = currentLocation?.address || 'Lokasi tidak tersedia';
@@ -886,10 +913,11 @@
       const scale = baseSize / 800;
       
       // Padding adjustments
-      const rightPadding = isLandscape ? 30 * scale : 25 * scale;
-      const topPadding = isLandscape ? 25 * scale : 25 * scale;
       const leftPadding = isLandscape ? 25 * scale : 20 * scale;
       const bottomPadding = isLandscape ? 25 * scale : 20 * scale;
+      
+      // Max width for watermark (half of the image width)
+      const maxWatermarkWidth = width / 2;
       
       // Shadow settings
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
@@ -897,74 +925,36 @@
       ctx.shadowOffsetX = 2 * scale;
       ctx.shadowOffsetY = 2 * scale;
       
-      // ========== RIGHT TOP - "Time MARK" ==========
-      const titleFontSize = isLandscape ? 38 * scale : 42 * scale;
-      const subtitleFontSize = isLandscape ? 14 * scale : 16 * scale;
-      
-      ctx.font = `bold ${titleFontSize}px Arial, sans-serif`;
-      ctx.textAlign = 'right';
-      
-      const markText = 'MARK';
-      const timeText = 'Time';
-      const markWidth = ctx.measureText(markText).width;
-      
-      // Draw "MARK" in white
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(markText, width - rightPadding, topPadding + titleFontSize);
-      
-      // Draw "Time" in orange
-      ctx.fillStyle = '#F97316';
-      ctx.fillText(timeText, width - rightPadding - markWidth - 8 * scale, topPadding + titleFontSize);
-      
-      // "Foto 100% akurat"
-      ctx.font = `${subtitleFontSize}px Arial, sans-serif`;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText('Foto 100% akurat', width - rightPadding, topPadding + titleFontSize + 25 * scale);
-      
-      // ========== LEFT BOTTOM ==========
-      // Logo card - adjust size for orientation
-      const cardWidth = isLandscape ? 80 * scale : 90 * scale;
-      const cardHeight = isLandscape ? 50 * scale : 55 * scale;
-      const cardX = leftPadding;
-      const cardY = height - bottomPadding - cardHeight - (isLandscape ? 70 * scale : 90 * scale);
-      
-      // Draw white card
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-      ctx.shadowBlur = 10 * scale;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.beginPath();
-      const radius = 10 * scale;
-      ctx.moveTo(cardX + radius, cardY);
-      ctx.lineTo(cardX + cardWidth - radius, cardY);
-      ctx.quadraticCurveTo(cardX + cardWidth, cardY, cardX + cardWidth, cardY + radius);
-      ctx.lineTo(cardX + cardWidth, cardY + cardHeight - radius);
-      ctx.quadraticCurveTo(cardX + cardWidth, cardY + cardHeight, cardX + cardWidth - radius, cardY + cardHeight);
-      ctx.lineTo(cardX + radius, cardY + cardHeight);
-      ctx.quadraticCurveTo(cardX, cardY + cardHeight, cardX, cardY + cardHeight - radius);
-      ctx.lineTo(cardX, cardY + radius);
-      ctx.quadraticCurveTo(cardX, cardY, cardX + radius, cardY);
-      ctx.closePath();
-      ctx.fill();
-      
-      // Logo text "I.B.L." in black
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#000000';
-      const logoFontSize = isLandscape ? 20 * scale : 22 * scale;
-      ctx.font = `bold ${logoFontSize}px Arial, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText('I.B.L.', cardX + cardWidth / 2, cardY + cardHeight / 2 + 8 * scale);
-      
-      // Time + separator + Date
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 6 * scale;
-      ctx.shadowOffsetX = 2 * scale;
-      ctx.shadowOffsetY = 2 * scale;
-      
-      const timeFontSize = isLandscape ? 28 * scale : 32 * scale;
-      const dateFontSize = isLandscape ? 18 * scale : 20 * scale;
-      const timeY = height - bottomPadding - (isLandscape ? 40 * scale : 50 * scale);
+      // ========== LEFT BOTTOM - All watermark content ==========
       ctx.textAlign = 'left';
+      
+      // Calculate positions from bottom up
+      const lineSpacing = isLandscape ? 8 * scale : 10 * scale;
+      
+      // Location (bottom-most)
+      const locationFontSize = isLandscape ? 13 * scale : 15 * scale;
+      const locationY = height - bottomPadding;
+      ctx.font = `${locationFontSize}px Arial, sans-serif`;
+      ctx.fillStyle = '#FFFFFF';
+      
+      // Truncate location if too long (max half width)
+      let displayLocation = '📍 ' + locationStr;
+      while (ctx.measureText(displayLocation).width > maxWatermarkWidth - leftPadding && displayLocation.length > 20) {
+        displayLocation = displayLocation.slice(0, -4) + '...';
+      }
+      ctx.fillText(displayLocation, leftPadding, locationY);
+      
+      // Day (above location)
+      const dayFontSize = isLandscape ? 16 * scale : 18 * scale;
+      const dayY = locationY - locationFontSize - lineSpacing;
+      ctx.font = `${dayFontSize}px Arial, sans-serif`;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(dayStr, leftPadding, dayY);
+      
+      // Time + separator + Date (above day)
+      const timeFontSize = isLandscape ? 32 * scale : 38 * scale;
+      const dateFontSize = isLandscape ? 16 * scale : 18 * scale;
+      const timeY = dayY - dayFontSize - lineSpacing;
       
       // Time
       ctx.font = `bold ${timeFontSize}px Arial, sans-serif`;
@@ -973,36 +963,78 @@
       
       // Orange separator
       const timeTextWidth = ctx.measureText(timeStr).width;
-      const separatorX = leftPadding + timeTextWidth + 15 * scale;
+      const separatorX = leftPadding + timeTextWidth + 12 * scale;
       
       ctx.shadowColor = 'transparent';
       ctx.strokeStyle = '#F97316';
       ctx.lineWidth = 4 * scale;
       ctx.beginPath();
-      ctx.moveTo(separatorX, timeY - 20 * scale);
+      ctx.moveTo(separatorX, timeY - 24 * scale);
       ctx.lineTo(separatorX, timeY + 6 * scale);
       ctx.stroke();
       
-      // Date
+      // Date (after separator, above time baseline)
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 6 * scale;
       ctx.font = `${dateFontSize}px Arial, sans-serif`;
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(dateStr, separatorX + 15 * scale, timeY);
+      ctx.fillText(dateStr, separatorX + 12 * scale, timeY);
       
-      // Location
-      const locationFontSize = isLandscape ? 13 * scale : 15 * scale;
-      const locationY = height - bottomPadding - (isLandscape ? 10 * scale : 12 * scale);
-      ctx.font = `${locationFontSize}px Arial, sans-serif`;
-      ctx.fillStyle = '#FFFFFF';
+      // Logo (above time)
+      const logoSize = isLandscape ? 55 * scale : 65 * scale;
+      const logoY = timeY - timeFontSize - lineSpacing - logoSize;
       
-      // Truncate if too long - more space in landscape
-      let displayLocation = '📍 ' + locationStr;
-      const maxWidth = width - leftPadding * 2;
-      while (ctx.measureText(displayLocation).width > maxWidth && displayLocation.length > 25) {
-        displayLocation = displayLocation.slice(0, -4) + '...';
+      if (logoImage) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 8 * scale;
+        
+        // Draw logo with rounded corners
+        const logoX = leftPadding;
+        const logoRadius = 8 * scale;
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(logoX + logoRadius, logoY);
+        ctx.lineTo(logoX + logoSize - logoRadius, logoY);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY, logoX + logoSize, logoY + logoRadius);
+        ctx.lineTo(logoX + logoSize, logoY + logoSize - logoRadius);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY + logoSize, logoX + logoSize - logoRadius, logoY + logoSize);
+        ctx.lineTo(logoX + logoRadius, logoY + logoSize);
+        ctx.quadraticCurveTo(logoX, logoY + logoSize, logoX, logoY + logoSize - logoRadius);
+        ctx.lineTo(logoX, logoY + logoRadius);
+        ctx.quadraticCurveTo(logoX, logoY, logoX + logoRadius, logoY);
+        ctx.closePath();
+        ctx.clip();
+        
+        ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+      } else {
+        // Fallback: draw text if logo not loaded
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 10 * scale;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        const logoX = leftPadding;
+        const logoRadius = 8 * scale;
+        ctx.moveTo(logoX + logoRadius, logoY);
+        ctx.lineTo(logoX + logoSize - logoRadius, logoY);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY, logoX + logoSize, logoY + logoRadius);
+        ctx.lineTo(logoX + logoSize, logoY + logoSize - logoRadius);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY + logoSize, logoX + logoSize - logoRadius, logoY + logoSize);
+        ctx.lineTo(logoX + logoRadius, logoY + logoSize);
+        ctx.quadraticCurveTo(logoX, logoY + logoSize, logoX, logoY + logoSize - logoRadius);
+        ctx.lineTo(logoX, logoY + logoRadius);
+        ctx.quadraticCurveTo(logoX, logoY, logoX + logoRadius, logoY);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${18 * scale}px Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('I.B.L.', leftPadding + logoSize / 2, logoY + logoSize / 2 + 6 * scale);
+        ctx.textAlign = 'left';
       }
-      ctx.fillText(displayLocation, leftPadding, locationY);
       
       // Reset
       ctx.shadowColor = 'transparent';
@@ -1536,5 +1568,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b615497e52f960c',t:'MTc2NzA5NTU0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b617d48a610ea7a',t:'MTc2NzA5NzIwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
