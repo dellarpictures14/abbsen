@@ -144,6 +144,12 @@
     <div class="p-4 bg-slate-50 flex gap-3"><button onclick="retakePhoto()" class="flex-1 py-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"> 🔄 Ambil Ulang </button> <button onclick="confirmPhoto()" class="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"> ✅ Gunakan Foto </button>
     </div>
    </div>
+  </div><!-- Gallery Full Preview Modal -->
+  <div id="gallery-preview-modal" class="fixed inset-0 bg-black z-[70] hidden flex-col">
+   <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-10"><span id="gallery-counter" class="text-white text-sm bg-black/50 px-3 py-1 rounded-full"></span> <button onclick="closeGalleryPreview()" class="bg-white/20 hover:bg-white/40 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold transition"> × </button>
+   </div>
+   <div class="flex-1 flex items-center justify-center p-4"><button onclick="prevGalleryPhoto()" id="gallery-prev-btn" class="absolute left-2 bg-white/20 hover:bg-white/40 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl transition z-10"> ‹ </button> <img id="gallery-preview-image" class="max-w-full max-h-full object-contain" alt="Preview foto"> <button onclick="nextGalleryPhoto()" id="gallery-next-btn" class="absolute right-2 bg-white/20 hover:bg-white/40 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl transition z-10"> › </button>
+   </div>
   </div>
   <script>
     // ==================== CONFIG & STATE ====================
@@ -175,8 +181,8 @@
       isLoggedIn: false,
       selectedWorkers: {},
       searchQuery: '',
-      photos: [],        // Preview kecil untuk tampilan
-      photosFullRes: [], // Resolusi penuh untuk download
+      photos: [],
+      photosFullRes: [],
       isSubmitting: false,
       calendarDate: new Date(),
       selectedRecapDate: null
@@ -187,6 +193,10 @@
     let photoQueueFullRes = [];
     let currentPreviewIndex = 0;
     let pendingFiles = [];
+    
+    // Gallery preview state
+    let galleryPhotos = [];
+    let galleryCurrentIndex = 0;
     
     let config = {
       app_title: 'ABSEN ONLINE DAILY WORKER I.B.L.'
@@ -831,12 +841,10 @@
       const file = pendingFiles[currentPreviewIndex];
       
       try {
-        // Process BOTH resolutions
         const { preview, fullRes } = await processImageDualResolution(file);
         photoQueue[currentPreviewIndex] = preview;
         photoQueueFullRes[currentPreviewIndex] = fullRes;
         
-        // Show preview (small version)
         showPhotoConfirmModal(preview);
       } catch (err) {
         console.error('Error processing image:', err);
@@ -951,18 +959,15 @@
         return;
       }
       
-      // Add to state (preview for display, fullRes for download)
       state.photos.push(preview);
       state.photosFullRes.push(fullRes);
       updatePhotoGrid();
       
-      // Check device type
       if (isIOSDevice()) {
         showToast('Foto ditambahkan! Akan tersimpan saat kirim absensi', 'success');
         currentPreviewIndex++;
         processNextPhoto();
       } else {
-        // Android/Desktop: Auto download FULL RES
         savePhotoToGallery(fullRes);
         showToast('Foto ditambahkan & disimpan ke galeri!', 'success');
         currentPreviewIndex++;
@@ -1182,7 +1187,6 @@
       const modal = document.getElementById('photo-preview-modal');
       const img = document.getElementById('photo-preview-image');
       
-      // Show FULL RES when previewing
       if (state.photosFullRes[index]) {
         img.src = state.photosFullRes[index];
       } else if (state.photos[index]) {
@@ -1210,16 +1214,13 @@
       state.isSubmitting = true;
       render();
       
-      // Save full res photos for iOS share
       const photosFullResToSave = [...state.photosFullRes];
       
-      // Process immediately (no delay)
       const localTime = getLocalTime();
       const dateKey = formatDateKey(localTime);
       const timeStr = formatTime(localTime);
       const tz = getTimezoneInfo();
       
-      // Use PREVIEW photos for storage (smaller size)
       const records = Object.entries(state.selectedWorkers).map(([worker, data], i) => ({
         id: generateId(),
         date: dateKey,
@@ -1227,7 +1228,7 @@
         timezone: tz.name,
         worker_name: worker,
         status: data.status,
-        photo_data: state.photos[i] || null, // Preview version (small)
+        photo_data: state.photos[i] || null,
         submitted_at: Date.now()
       }));
       
@@ -1240,7 +1241,7 @@
             timezone: tz.name,
             worker_name: 'Foto Tambahan',
             status: 'Photo Only',
-            photo_data: state.photos[i], // Preview version
+            photo_data: state.photos[i],
             submitted_at: Date.now()
           });
         }
@@ -1248,7 +1249,6 @@
       
       addRecords(records);
       
-      // Reset state
       const submittedCount = selectedCount;
       state.selectedWorkers = {};
       state.photos = [];
@@ -1256,10 +1256,9 @@
       state.isSubmitting = false;
       render();
       
-      // Show success popup
       showSuccessPopup(submittedCount);
       
-      // iOS: Auto save FULL RES photos via Share Sheet
+      // iOS: Auto share photos via Share Sheet (no manual save modal)
       if (isIOSDevice() && photosFullResToSave.length > 0) {
         setTimeout(() => {
           savePhotosToGalleryIOS(photosFullResToSave);
@@ -1292,68 +1291,19 @@
       
       if (navigator.canShare && navigator.canShare({ files })) {
         try {
-          showToast(`📱 Simpan ${files.length} foto ke galeri...`, 'info');
-          
           await navigator.share({
             files: files,
             title: 'Foto Absensi IBL',
-            text: `${files.length} foto absensi - Tap "Save ${files.length > 1 ? 'All' : 'Image'}" untuk simpan ke galeri`
+            text: `${files.length} foto absensi - Tap "Save Image" untuk simpan ke galeri`
           });
           
-          showToast('✅ Foto berhasil disimpan ke galeri!', 'success');
+          showToast('✅ Foto berhasil disimpan!', 'success');
         } catch (err) {
-          if (err.name === 'AbortError') {
-            showIOSManualSaveModal(photos);
-          } else {
+          // User cancelled or share failed - no popup, just silent
+          if (err.name !== 'AbortError') {
             console.log('Share failed:', err);
-            showIOSManualSaveModal(photos);
           }
         }
-      } else {
-        showIOSManualSaveModal(photos);
-      }
-    }
-    
-    function showIOSManualSaveModal(photos) {
-      const modal = document.createElement('div');
-      modal.id = 'ios-manual-save-modal';
-      modal.className = 'fixed inset-0 bg-black/95 z-[80] flex flex-col items-center justify-start p-4 overflow-auto';
-      
-      modal.innerHTML = `
-        <div class="w-full max-w-lg">
-          <div class="text-center mb-4 mt-4">
-            <div class="bg-amber-500 text-white px-4 py-2 rounded-xl inline-flex items-center gap-2 mb-3">
-              <span class="text-xl">📱</span>
-              <span class="font-bold">iPhone: Simpan Foto Manual</span>
-            </div>
-            <p class="text-white text-sm mb-2">Tekan & tahan setiap foto, lalu pilih "Tambahkan ke Foto"</p>
-            <p class="text-blue-300 text-xs">${photos.length} foto perlu disimpan</p>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-3 mb-4">
-            ${photos.map((photo, i) => `
-              <div class="relative">
-                <img src="${photo}" class="w-full aspect-square object-cover rounded-xl shadow-lg">
-                <div class="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg">
-                  Foto ${i + 1}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          
-          <button onclick="closeIOSManualSaveModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition">
-            ✓ Selesai Menyimpan
-          </button>
-        </div>
-      `;
-      
-      document.body.appendChild(modal);
-    }
-    
-    function closeIOSManualSaveModal() {
-      const modal = document.getElementById('ios-manual-save-modal');
-      if (modal) {
-        modal.remove();
       }
     }
     
@@ -1726,19 +1676,64 @@
             <p class="text-lg text-blue-200 mb-8 text-center">${formatDate(dateObj)}</p>
             
             <div class="photo-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              ${photos.map(photo => `
-                <div class="glass-card rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition">
-                  <img src="${photo.photo_data}" class="w-full aspect-square object-cover">
-                  <div class="p-3">
-                    <h4 class="font-semibold text-slate-800 text-sm truncate">${photo.worker_name}</h4>
-                    <p class="text-xs text-slate-500">${photo.time}</p>
-                  </div>
+              ${photos.map((photo, index) => `
+                <div class="cursor-pointer" onclick="openGalleryPreview(${index}, '${dateKey}')">
+                  <img src="${photo.photo_data}" class="w-full aspect-square object-cover rounded-2xl shadow-lg hover:shadow-xl transition hover:scale-105">
                 </div>
               `).join('')}
             </div>
           </div>
         </div>
       `;
+    }
+    
+    // ==================== GALLERY FULL PREVIEW ====================
+    function openGalleryPreview(index, dateKey) {
+      const photos = getData().filter(r => r.date === dateKey && r.photo_data);
+      galleryPhotos = photos.map(p => p.photo_data);
+      galleryCurrentIndex = index;
+      
+      updateGalleryPreview();
+      
+      const modal = document.getElementById('gallery-preview-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    
+    function updateGalleryPreview() {
+      const img = document.getElementById('gallery-preview-image');
+      const counter = document.getElementById('gallery-counter');
+      const prevBtn = document.getElementById('gallery-prev-btn');
+      const nextBtn = document.getElementById('gallery-next-btn');
+      
+      img.src = galleryPhotos[galleryCurrentIndex];
+      counter.textContent = `${galleryCurrentIndex + 1} / ${galleryPhotos.length}`;
+      
+      // Show/hide nav buttons
+      prevBtn.style.display = galleryCurrentIndex === 0 ? 'none' : 'flex';
+      nextBtn.style.display = galleryCurrentIndex === galleryPhotos.length - 1 ? 'none' : 'flex';
+    }
+    
+    function prevGalleryPhoto() {
+      if (galleryCurrentIndex > 0) {
+        galleryCurrentIndex--;
+        updateGalleryPreview();
+      }
+    }
+    
+    function nextGalleryPhoto() {
+      if (galleryCurrentIndex < galleryPhotos.length - 1) {
+        galleryCurrentIndex++;
+        updateGalleryPreview();
+      }
+    }
+    
+    function closeGalleryPreview() {
+      const modal = document.getElementById('gallery-preview-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      galleryPhotos = [];
+      galleryCurrentIndex = 0;
     }
     
     // ==================== NAVIGATION ====================
@@ -1791,6 +1786,20 @@
           handleLogin(e);
         }
       });
+      
+      // Keyboard navigation for gallery preview
+      document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('gallery-preview-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+          if (e.key === 'ArrowLeft') {
+            prevGalleryPhoto();
+          } else if (e.key === 'ArrowRight') {
+            nextGalleryPhoto();
+          } else if (e.key === 'Escape') {
+            closeGalleryPreview();
+          }
+        }
+      });
     }
     
     // Initialize
@@ -1811,5 +1820,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6ae89ec558e9d5',t:'MTc2NzE5NTk3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6b038ee0ede9d5',t:'MTc2NzE5NzA3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
