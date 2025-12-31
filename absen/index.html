@@ -132,7 +132,14 @@
  </head>
  <body class="h-full dark-blue-bg">
   <div id="app" class="h-full overflow-auto"></div><!-- Toast Container -->
-  <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100]"></div><!-- Photo Preview Confirmation Modal -->
+  <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100]"></div><!-- Location Loading Overlay -->
+  <div id="location-loading-overlay" class="fixed inset-0 bg-black/70 z-[70] hidden items-center justify-center">
+   <div class="bg-white rounded-2xl p-6 text-center shadow-2xl max-w-sm mx-4">
+    <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+    <h3 class="text-lg font-bold text-slate-800 mb-2">📍 Mendapatkan Lokasi...</h3>
+    <p class="text-sm text-slate-500">Mohon tunggu sebentar</p>
+   </div>
+  </div><!-- Photo Preview Confirmation Modal -->
   <div id="photo-confirm-modal" class="fixed inset-0 bg-black/90 z-[60] hidden items-center justify-center p-4">
    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl">
     <div class="p-4 bg-slate-100 border-b">
@@ -698,44 +705,99 @@
       }
     }
     
-    // ==================== PHOTO UPLOAD WITH WATERMARK ====================
-    let currentLocation = { address: 'Mengambil lokasi...' };
+    // ==================== LOCATION HANDLING (FIXED FOR IPHONE) ====================
+    let currentLocation = { address: 'Lokasi belum tersedia' };
+    let locationReady = false;
     
-    // Request location on page load
-    function requestLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            currentLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              address: 'Mengambil alamat...'
-            };
-            getAddressFromCoords(position.coords.latitude, position.coords.longitude);
-          },
-          (error) => {
-            currentLocation = { address: 'Lokasi tidak tersedia' };
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-        );
-      } else {
-        currentLocation = { address: 'GPS tidak didukung' };
+    // Show/hide location loading overlay
+    function showLocationLoading() {
+      const overlay = document.getElementById('location-loading-overlay');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
       }
     }
     
-    function getAddressFromCoords(lat, lng) {
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=18`)
-        .then(response => response.json())
-        .then(data => {
-          if (data && data.display_name) {
-            currentLocation.address = data.display_name;
-          } else {
-            currentLocation.address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    function hideLocationLoading() {
+      const overlay = document.getElementById('location-loading-overlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+      }
+    }
+    
+    // Get location with promise - waits until location is ready
+    function getLocationBeforePhoto() {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          currentLocation = { address: 'GPS tidak didukung' };
+          resolve();
+          return;
+        }
+        
+        // Set timeout - max 15 seconds waiting for GPS (longer for iPhone)
+        const timeout = setTimeout(() => {
+          if (!locationReady) {
+            currentLocation.address = 'Lokasi tidak tersedia (timeout)';
           }
-        })
-        .catch(err => {
-          currentLocation.address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        });
+          resolve();
+        }, 15000);
+        
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            clearTimeout(timeout);
+            
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            currentLocation = {
+              lat: lat,
+              lng: lng,
+              address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` // Default to coordinates first
+            };
+            
+            // Get address from coordinates
+            try {
+              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=18`);
+              const data = await response.json();
+              
+              if (data && data.display_name) {
+                currentLocation.address = data.display_name;
+              }
+            } catch (err) {
+              console.log('Geocoding error, using coordinates');
+            }
+            
+            locationReady = true;
+            resolve();
+          },
+          (error) => {
+            clearTimeout(timeout);
+            console.log('GPS Error:', error.code, error.message);
+            
+            let errorMsg = 'Lokasi tidak tersedia';
+            switch(error.code) {
+              case 1:
+                errorMsg = 'Izin lokasi ditolak';
+                break;
+              case 2:
+                errorMsg = 'Lokasi tidak tersedia';
+                break;
+              case 3:
+                errorMsg = 'Timeout mendapatkan lokasi';
+                break;
+            }
+            
+            currentLocation = { address: errorMsg };
+            resolve();
+          },
+          { 
+            enableHighAccuracy: true, 
+            timeout: 12000, 
+            maximumAge: 0 
+          }
+        );
+      });
     }
     
     // Logo image for watermark
@@ -769,8 +831,17 @@
       const files = event.target.files;
       if (files.length === 0) return;
       
-      // Request fresh location
-      requestLocation();
+      // Show loading while getting location
+      showLocationLoading();
+      
+      // Reset location ready flag
+      locationReady = false;
+      
+      // Wait for location to be ready (especially important for iPhone)
+      await getLocationBeforePhoto();
+      
+      // Hide loading
+      hideLocationLoading();
       
       // Store pending files and reset queue
       pendingFiles = Array.from(files);
@@ -801,6 +872,7 @@
         showPhotoConfirmModal(photoWithWatermark);
       } catch (err) {
         console.error('Error processing image:', err);
+        showToast('Gagal memproses foto', 'error');
         // Skip to next photo on error
         currentPreviewIndex++;
         await processNextPhoto();
@@ -850,11 +922,7 @@
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       
-      // Remove current file from pending and adjust queue
-      pendingFiles.splice(currentPreviewIndex, 1);
-      photoQueue.splice(currentPreviewIndex, 1);
-      
-      // Clear all pending files if this was the only one or user wants to retake
+      // Clear all pending files
       pendingFiles = [];
       photoQueue = [];
       currentPreviewIndex = 0;
@@ -936,6 +1004,7 @@
       const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
       const dayStr = days[now.getDay()];
       
+      // Use the location that was obtained before processing
       const locationStr = currentLocation?.address || 'Lokasi tidak tersedia';
       
       const shortSide = Math.min(width, height);
@@ -1578,8 +1647,6 @@
         }
         render();
         attachEventListeners();
-        // Request location on init
-        requestLocation();
       }
     };
     
@@ -1609,5 +1676,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6a71e747c0e9cf',t:'MTc2NzE5MTExMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6a9ee3b171e9d5',t:'MTc2NzE5Mjk1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
