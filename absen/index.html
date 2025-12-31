@@ -881,11 +881,76 @@
         state.photos.push(photo);
         updatePhotoGrid();
         
-        // Also save to device gallery
-        savePhotoToGallery(photo);
+        // Check if iOS device
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         
-        showToast('Foto ditambahkan & disimpan ke galeri!', 'success');
+        if (isIOS) {
+          // Show iOS save modal
+          showIOSSaveModal(photo);
+        } else {
+          // For Android/Desktop - auto download
+          savePhotoToGallery(photo);
+          showToast('Foto ditambahkan & disimpan ke galeri!', 'success');
+          
+          // Move to next photo
+          currentPreviewIndex++;
+          processNextPhoto();
+        }
+      } else {
+        // Move to next photo if no photo
+        currentPreviewIndex++;
+        processNextPhoto();
       }
+    }
+    
+    // Show iOS save modal with instructions
+    function showIOSSaveModal(photoData) {
+      // Close the confirm modal first
+      const confirmModal = document.getElementById('photo-confirm-modal');
+      confirmModal.classList.add('hidden');
+      confirmModal.classList.remove('flex');
+      
+      // Create iOS save modal
+      const modal = document.createElement('div');
+      modal.id = 'ios-save-modal';
+      modal.className = 'fixed inset-0 bg-black/95 z-[70] flex flex-col items-center justify-center p-4';
+      modal.innerHTML = `
+        <div class="text-center mb-4">
+          <div class="bg-amber-500 text-white px-4 py-2 rounded-xl inline-flex items-center gap-2 mb-3">
+            <span class="text-xl">📱</span>
+            <span class="font-bold">iPhone: Tekan & Tahan Foto</span>
+          </div>
+          <p class="text-white text-sm">Lalu pilih "Tambahkan ke Foto" atau "Save to Photos"</p>
+        </div>
+        
+        <div class="relative max-w-sm w-full">
+          <img src="${photoData}" class="w-full rounded-2xl shadow-2xl" style="max-height: 60vh; object-fit: contain;">
+          
+          <!-- Animated hint overlay -->
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 animate-pulse">
+              <span class="text-white text-lg font-bold">👆 Tekan & Tahan</span>
+            </div>
+          </div>
+        </div>
+        
+        <button onclick="closeIOSSaveModal()" class="mt-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl transition">
+          ✓ Sudah Disimpan, Lanjutkan
+        </button>
+        
+        <p class="text-white/60 text-xs mt-3">Foto sudah ditambahkan ke preview upload</p>
+      `;
+      
+      document.body.appendChild(modal);
+    }
+    
+    function closeIOSSaveModal() {
+      const modal = document.getElementById('ios-save-modal');
+      if (modal) {
+        modal.remove();
+      }
+      
+      showToast('Foto ditambahkan!', 'success');
       
       // Move to next photo
       currentPreviewIndex++;
@@ -1675,5 +1740,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6ab98eb17ae9d5',t:'MTc2NzE5NDA0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6ac49076c7e9d5',t:'MTc2NzE5NDQ5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
