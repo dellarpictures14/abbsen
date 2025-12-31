@@ -800,9 +800,9 @@
       });
     }
     
-    // Logo image for watermark
+    // Logo image for watermark - HD resolution
     let logoImage = null;
-    const logoUrl = 'https://lh3.googleusercontent.com/d/1zaavYZSem-yNHztE724qeIAWw9uGJgen';
+    const logoUrl = 'https://lh3.googleusercontent.com/d/1zaavYZSem-yNHztE724qeIAWw9uGJgen=s1024';
     
     function loadLogoImage() {
       return new Promise((resolve) => {
@@ -1013,13 +1013,13 @@
       const padding = 20 * scale;
       const maxLocationWidth = (width / 2) - padding;
       
-      // TimeMark label
+      // TimeMark label - 1.5x size
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 4 * scale;
       ctx.shadowOffsetX = 1 * scale;
       ctx.shadowOffsetY = 1 * scale;
       
-      const timeMarkSize = 14 * scale;
+      const timeMarkSize = 21 * scale; // Was 14, now 1.5x
       ctx.font = `bold ${timeMarkSize}px Arial, sans-serif`;
       ctx.textAlign = 'right';
       
@@ -1033,15 +1033,15 @@
       ctx.fillStyle = '#F97316';
       ctx.fillText(timeText, width - padding - markWidth, padding + timeMarkSize);
       
-      // Left bottom watermark
+      // Left bottom watermark - all sizes 1.5x
       ctx.textAlign = 'left';
       
-      const locationSize = 12 * scale;
-      const daySize = 14 * scale;
-      const dateSize = 14 * scale;
-      const timeSize = isLandscape ? 28 * scale : 32 * scale;
-      const logoSize = isLandscape ? 45 * scale : 55 * scale;
-      const lineGap = 6 * scale;
+      const locationSize = 18 * scale;  // Was 12, now 1.5x
+      const daySize = 21 * scale;       // Was 14, now 1.5x
+      const dateSize = 21 * scale;      // Was 14, now 1.5x
+      const timeSize = isLandscape ? 42 * scale : 48 * scale;  // Was 28/32, now 1.5x
+      const logoSize = isLandscape ? 68 * scale : 82 * scale;  // Was 45/55, now 1.5x
+      const lineGap = 9 * scale;        // Was 6, now 1.5x
       
       ctx.font = `${locationSize}px Arial, sans-serif`;
       const locationLines = wrapText(ctx, '📍 ' + locationStr, maxLocationWidth);
@@ -1068,10 +1068,10 @@
       ctx.fillText(timeStr, padding, currentY);
       currentY -= (timeSize + lineGap);
       
-      // Logo
+      // Logo - HD quality
       const logoY = currentY - logoSize;
       const logoX = padding;
-      const logoRadius = 6 * scale;
+      const logoRadius = 8 * scale; // Slightly larger radius for bigger logo
       
       if (logoImage) {
         ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
@@ -1111,9 +1111,9 @@
         
         ctx.shadowColor = 'transparent';
         ctx.fillStyle = '#000000';
-        ctx.font = `bold ${14 * scale}px Arial, sans-serif`;
+        ctx.font = `bold ${18 * scale}px Arial, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText('I.B.L.', logoX + logoSize / 2, logoY + logoSize / 2 + 5 * scale);
+        ctx.fillText('I.B.L.', logoX + logoSize / 2, logoY + logoSize / 2 + 6 * scale);
         ctx.textAlign = 'left';
       }
       
@@ -1676,5 +1676,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6a9ee3b171e9d5',t:'MTc2NzE5Mjk1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6aaffc5438e9d5',t:'MTc2NzE5MzY1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
