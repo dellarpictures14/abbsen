@@ -175,7 +175,8 @@
       isLoggedIn: false,
       selectedWorkers: {},
       searchQuery: '',
-      photos: [],
+      photos: [],        // Preview kecil untuk tampilan
+      photosFullRes: [], // Resolusi penuh untuk download
       isSubmitting: false,
       calendarDate: new Date(),
       selectedRecapDate: null
@@ -183,6 +184,7 @@
     
     // Photo preview queue state
     let photoQueue = [];
+    let photoQueueFullRes = [];
     let currentPreviewIndex = 0;
     let pendingFiles = [];
     
@@ -321,7 +323,6 @@
       reset: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`,
       recap: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
       camera: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>`,
-      upload: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>`,
       send: `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-7 7m7-7l7 7"/></svg>`,
       calendar: `<svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>`,
       calendarSelect: `<svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"/></svg>`,
@@ -552,7 +553,7 @@
                     id="submit-btn"
                     ${state.isSubmitting ? 'disabled' : ''}
                     class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl rounded-2xl shadow-2xl hover:shadow-xl transition transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3">
-              ${state.isSubmitting ? '<span class="animate-spin">...</span> Mengirim...' : `${ICONS.send} Kirim Absensi`}
+              ${state.isSubmitting ? '<span class="animate-spin">⏳</span> Mengirim...' : `${ICONS.send} Kirim Absensi`}
             </button>
           </div>
         </div>
@@ -683,6 +684,7 @@
     function resetAll() {
       state.selectedWorkers = {};
       state.photos = [];
+      state.photosFullRes = [];
       render();
       showToast('Semua pilihan direset!', 'info');
     }
@@ -802,7 +804,7 @@
     
     loadLogoImage();
     
-    // ==================== PHOTO UPLOAD WITH PREVIEW ====================
+    // ==================== PHOTO UPLOAD WITH DUAL RESOLUTION ====================
     async function handleFileUpload(event) {
       const files = event.target.files;
       if (files.length === 0) return;
@@ -812,6 +814,7 @@
       
       pendingFiles = Array.from(files);
       photoQueue = [];
+      photoQueueFullRes = [];
       currentPreviewIndex = 0;
       
       await processNextPhoto();
@@ -828,15 +831,90 @@
       const file = pendingFiles[currentPreviewIndex];
       
       try {
-        const photoWithWatermark = await processImageWithWatermark(file);
-        photoQueue[currentPreviewIndex] = photoWithWatermark;
-        showPhotoConfirmModal(photoWithWatermark);
+        // Process BOTH resolutions
+        const { preview, fullRes } = await processImageDualResolution(file);
+        photoQueue[currentPreviewIndex] = preview;
+        photoQueueFullRes[currentPreviewIndex] = fullRes;
+        
+        // Show preview (small version)
+        showPhotoConfirmModal(preview);
       } catch (err) {
         console.error('Error processing image:', err);
         showToast('Gagal memproses foto', 'error');
         currentPreviewIndex++;
         await processNextPhoto();
       }
+    }
+    
+    // ==================== DUAL RESOLUTION PROCESSING ====================
+    function processImageDualResolution(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+          const img = new Image();
+          
+          img.onload = () => {
+            // Create PREVIEW (small - max 480px)
+            const previewCanvas = document.createElement('canvas');
+            const previewCtx = previewCanvas.getContext('2d');
+            
+            const previewMaxSize = 480;
+            let previewWidth = img.width;
+            let previewHeight = img.height;
+            
+            if (previewWidth > previewHeight) {
+              if (previewWidth > previewMaxSize) {
+                previewHeight = (previewHeight * previewMaxSize) / previewWidth;
+                previewWidth = previewMaxSize;
+              }
+            } else {
+              if (previewHeight > previewMaxSize) {
+                previewWidth = (previewWidth * previewMaxSize) / previewHeight;
+                previewHeight = previewMaxSize;
+              }
+            }
+            
+            previewCanvas.width = previewWidth;
+            previewCanvas.height = previewHeight;
+            previewCtx.drawImage(img, 0, 0, previewWidth, previewHeight);
+            addWatermark(previewCtx, previewWidth, previewHeight);
+            const preview = previewCanvas.toDataURL('image/jpeg', 0.6);
+            
+            // Create FULL RESOLUTION (original size or max 1920px)
+            const fullCanvas = document.createElement('canvas');
+            const fullCtx = fullCanvas.getContext('2d');
+            
+            const fullMaxSize = 1920;
+            let fullWidth = img.width;
+            let fullHeight = img.height;
+            
+            if (fullWidth > fullMaxSize || fullHeight > fullMaxSize) {
+              if (fullWidth > fullHeight) {
+                fullHeight = (fullHeight * fullMaxSize) / fullWidth;
+                fullWidth = fullMaxSize;
+              } else {
+                fullWidth = (fullWidth * fullMaxSize) / fullHeight;
+                fullHeight = fullMaxSize;
+              }
+            }
+            
+            fullCanvas.width = fullWidth;
+            fullCanvas.height = fullHeight;
+            fullCtx.drawImage(img, 0, 0, fullWidth, fullHeight);
+            addWatermark(fullCtx, fullWidth, fullHeight);
+            const fullRes = fullCanvas.toDataURL('image/jpeg', 0.92);
+            
+            resolve({ preview, fullRes });
+          };
+          
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = e.target.result;
+        };
+        
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
     }
     
     function showPhotoConfirmModal(photoData) {
@@ -858,34 +936,35 @@
       
       pendingFiles = [];
       photoQueue = [];
+      photoQueueFullRes = [];
       currentPreviewIndex = 0;
     }
     
     // ==================== CONFIRM PHOTO ====================
     async function confirmPhoto() {
-      const photo = photoQueue[currentPreviewIndex];
-      if (!photo) {
+      const preview = photoQueue[currentPreviewIndex];
+      const fullRes = photoQueueFullRes[currentPreviewIndex];
+      
+      if (!preview || !fullRes) {
         currentPreviewIndex++;
         processNextPhoto();
         return;
       }
       
-      // Add photo to state
-      state.photos.push(photo);
+      // Add to state (preview for display, fullRes for download)
+      state.photos.push(preview);
+      state.photosFullRes.push(fullRes);
       updatePhotoGrid();
       
-      // Check device type - iPhone: TIDAK auto download di sini, nanti saat submit
+      // Check device type
       if (isIOSDevice()) {
-        // iPhone: Langsung lanjut, foto akan di-share saat Kirim Absensi
         showToast('Foto ditambahkan! Akan tersimpan saat kirim absensi', 'success');
-        
         currentPreviewIndex++;
         processNextPhoto();
       } else {
-        // Android/Desktop: Auto download langsung
-        savePhotoToGallery(photo);
+        // Android/Desktop: Auto download FULL RES
+        savePhotoToGallery(fullRes);
         showToast('Foto ditambahkan & disimpan ke galeri!', 'success');
-        
         currentPreviewIndex++;
         processNextPhoto();
       }
@@ -918,6 +997,7 @@
       
       pendingFiles = [];
       photoQueue = [];
+      photoQueueFullRes = [];
       currentPreviewIndex = 0;
       
       const fileInput = document.querySelector('input[type="file"][accept="image/*"]');
@@ -939,36 +1019,6 @@
           </div>
         `).join('');
       }
-    }
-    
-    function processImageWithWatermark(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        
-        reader.onload = (e) => {
-          const img = new Image();
-          
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = img.width;
-            canvas.height = img.height;
-            
-            ctx.drawImage(img, 0, 0);
-            addWatermark(ctx, canvas.width, canvas.height);
-            
-            const result = canvas.toDataURL('image/jpeg', 0.92);
-            resolve(result);
-          };
-          
-          img.onerror = () => reject(new Error('Failed to load image'));
-          img.src = e.target.result;
-        };
-        
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-      });
     }
     
     function addWatermark(ctx, width, height) {
@@ -1124,6 +1174,7 @@
     
     function removePhoto(index) {
       state.photos.splice(index, 1);
+      state.photosFullRes.splice(index, 1);
       render();
     }
     
@@ -1131,11 +1182,14 @@
       const modal = document.getElementById('photo-preview-modal');
       const img = document.getElementById('photo-preview-image');
       
-      if (state.photos[index]) {
+      // Show FULL RES when previewing
+      if (state.photosFullRes[index]) {
+        img.src = state.photosFullRes[index];
+      } else if (state.photos[index]) {
         img.src = state.photos[index];
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
       }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
     }
     
     function closePhotoPreview() {
@@ -1156,68 +1210,67 @@
       state.isSubmitting = true;
       render();
       
-      // Simpan foto untuk di-share nanti (khusus iPhone)
-      const photosToSave = [...state.photos];
+      // Save full res photos for iOS share
+      const photosFullResToSave = [...state.photosFullRes];
       
-      setTimeout(async () => {
-        const localTime = getLocalTime();
-        const dateKey = formatDateKey(localTime);
-        const timeStr = formatTime(localTime);
-        const tz = getTimezoneInfo();
-        
-        const records = Object.entries(state.selectedWorkers).map(([worker, data], i) => ({
-          id: generateId(),
-          date: dateKey,
-          time: timeStr,
-          timezone: tz.name,
-          worker_name: worker,
-          status: data.status,
-          photo_data: state.photos[i] || null,
-          submitted_at: Date.now()
-        }));
-        
-        if (state.photos.length > Object.keys(state.selectedWorkers).length) {
-          for (let i = Object.keys(state.selectedWorkers).length; i < state.photos.length; i++) {
-            records.push({
-              id: generateId(),
-              date: dateKey,
-              time: timeStr,
-              timezone: tz.name,
-              worker_name: 'Foto Tambahan',
-              status: 'Photo Only',
-              photo_data: state.photos[i],
-              submitted_at: Date.now()
-            });
-          }
+      // Process immediately (no delay)
+      const localTime = getLocalTime();
+      const dateKey = formatDateKey(localTime);
+      const timeStr = formatTime(localTime);
+      const tz = getTimezoneInfo();
+      
+      // Use PREVIEW photos for storage (smaller size)
+      const records = Object.entries(state.selectedWorkers).map(([worker, data], i) => ({
+        id: generateId(),
+        date: dateKey,
+        time: timeStr,
+        timezone: tz.name,
+        worker_name: worker,
+        status: data.status,
+        photo_data: state.photos[i] || null, // Preview version (small)
+        submitted_at: Date.now()
+      }));
+      
+      if (state.photos.length > Object.keys(state.selectedWorkers).length) {
+        for (let i = Object.keys(state.selectedWorkers).length; i < state.photos.length; i++) {
+          records.push({
+            id: generateId(),
+            date: dateKey,
+            time: timeStr,
+            timezone: tz.name,
+            worker_name: 'Foto Tambahan',
+            status: 'Photo Only',
+            photo_data: state.photos[i], // Preview version
+            submitted_at: Date.now()
+          });
         }
-        
-        addRecords(records);
-        
-        // Reset state
-        const submittedCount = selectedCount;
-        state.selectedWorkers = {};
-        state.photos = [];
-        state.isSubmitting = false;
-        render();
-        
-        // Tampilkan popup sukses
-        showSuccessPopup(submittedCount);
-        
-        // Khusus iPhone: Auto save foto ke galeri via Share Sheet
-        if (isIOSDevice() && photosToSave.length > 0) {
-          // Tunggu popup sukses selesai, lalu trigger share
-          setTimeout(() => {
-            savePhotosToGalleryIOS(photosToSave);
-          }, 1200);
-        }
-      }, 1500);
+      }
+      
+      addRecords(records);
+      
+      // Reset state
+      const submittedCount = selectedCount;
+      state.selectedWorkers = {};
+      state.photos = [];
+      state.photosFullRes = [];
+      state.isSubmitting = false;
+      render();
+      
+      // Show success popup
+      showSuccessPopup(submittedCount);
+      
+      // iOS: Auto save FULL RES photos via Share Sheet
+      if (isIOSDevice() && photosFullResToSave.length > 0) {
+        setTimeout(() => {
+          savePhotosToGalleryIOS(photosFullResToSave);
+        }, 800);
+      }
     }
     
     // ==================== SAVE PHOTOS FOR iPHONE ====================
     async function savePhotosToGalleryIOS(photos) {
       if (photos.length === 0) return;
       
-      // Convert semua foto ke File objects
       const files = [];
       for (let i = 0; i < photos.length; i++) {
         try {
@@ -1237,10 +1290,8 @@
       
       if (files.length === 0) return;
       
-      // Cek apakah Web Share API support files
       if (navigator.canShare && navigator.canShare({ files })) {
         try {
-          // Tampilkan notifikasi dulu
           showToast(`📱 Simpan ${files.length} foto ke galeri...`, 'info');
           
           await navigator.share({
@@ -1252,7 +1303,6 @@
           showToast('✅ Foto berhasil disimpan ke galeri!', 'success');
         } catch (err) {
           if (err.name === 'AbortError') {
-            // User cancelled share - show manual save option
             showIOSManualSaveModal(photos);
           } else {
             console.log('Share failed:', err);
@@ -1260,12 +1310,10 @@
           }
         }
       } else {
-        // Fallback: tampilkan modal manual save
         showIOSManualSaveModal(photos);
       }
     }
     
-    // Modal untuk save manual di iPhone (fallback)
     function showIOSManualSaveModal(photos) {
       const modal = document.createElement('div');
       modal.id = 'ios-manual-save-modal';
@@ -1763,5 +1811,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6adc5784fbe9d5',t:'MTc2NzE5NTQ3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6ae89ec558e9d5',t:'MTc2NzE5NTk3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
