@@ -913,15 +913,81 @@ function jsonResponse(data) {
     async function capturePhoto() {
       const video = document.getElementById('cameraVideo');
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      
+      // Get actual video dimensions
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      
+      // Detect device orientation using multiple methods for Android & iPhone compatibility
+      let isDevicePortrait = false;
+      
+      // Method 1: Screen orientation API (modern browsers)
+      if (screen.orientation) {
+        const angle = screen.orientation.angle;
+        isDevicePortrait = (angle === 0 || angle === 180);
+        console.log('Screen orientation angle:', angle, 'Portrait:', isDevicePortrait);
+      }
+      // Method 2: window.orientation (iOS Safari, older Android)
+      else if (typeof window.orientation !== 'undefined') {
+        isDevicePortrait = (window.orientation === 0 || window.orientation === 180);
+        console.log('Window orientation:', window.orientation, 'Portrait:', isDevicePortrait);
+      }
+      // Method 3: matchMedia (fallback)
+      else if (window.matchMedia) {
+        isDevicePortrait = window.matchMedia('(orientation: portrait)').matches;
+        console.log('MediaQuery portrait:', isDevicePortrait);
+      }
+      // Method 4: Compare screen dimensions
+      else {
+        isDevicePortrait = window.innerHeight > window.innerWidth;
+        console.log('Screen size portrait:', isDevicePortrait);
+      }
+      
+      // For mobile cameras, the video stream orientation may differ from device orientation
+      // Check if we need to rotate based on video vs screen aspect ratios
+      const videoAspect = videoWidth / videoHeight;
+      const screenAspect = window.innerWidth / window.innerHeight;
+      const videoIsLandscape = videoWidth > videoHeight;
+      
+      console.log(`Video: ${videoWidth}x${videoHeight} (${videoIsLandscape ? 'landscape' : 'portrait'})`);
+      console.log(`Screen: ${window.innerWidth}x${window.innerHeight}`);
+      console.log(`Device portrait mode: ${isDevicePortrait}`);
+      
+      // Determine final canvas orientation
+      // If device is portrait but video is landscape (common on mobile), we may need to handle this
+      let finalWidth, finalHeight;
+      let needsRotation = false;
+      
+      // Most mobile browsers now handle this automatically, but for back camera especially
+      // The video dimensions already reflect the correct orientation
+      if (isDevicePortrait && videoIsLandscape && currentFacingMode === 'environment') {
+        // Some Android devices report landscape video even in portrait mode
+        // We need to rotate 90 degrees
+        needsRotation = true;
+        finalWidth = videoHeight;
+        finalHeight = videoWidth;
+        console.log('Rotation needed: Video is landscape in portrait mode');
+      } else {
+        finalWidth = videoWidth;
+        finalHeight = videoHeight;
+      }
+      
+      canvas.width = finalWidth;
+      canvas.height = finalHeight;
       const ctx = canvas.getContext('2d');
       
-      // Draw video frame
-      ctx.drawImage(video, 0, 0);
+      // Draw video frame with rotation if needed
+      if (needsRotation) {
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(-90 * Math.PI / 180);
+        ctx.drawImage(video, -videoWidth / 2, -videoHeight / 2, videoWidth, videoHeight);
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+      } else {
+        ctx.drawImage(video, 0, 0);
+      }
       
-      // Add watermark
-      await addWatermark(ctx, canvas.width, canvas.height);
+      // Add watermark - pass final dimensions
+      await addWatermark(ctx, canvas.width, canvas.height, videoWidth, videoHeight);
       
       // Get full quality image
       const fullData = canvas.toDataURL('image/jpeg', 0.95);
@@ -938,7 +1004,33 @@ function jsonResponse(data) {
       };
     }
 
-    async function addWatermark(ctx, width, height) {
+    // Preload watermark logo globally
+    let watermarkLogoLoaded = null;
+    const WATERMARK_LOGO_URL = 'https://drive.google.com/thumbnail?id=1zaavYZSem-yNHztE724qeIAWw9uGJgen&sz=w200';
+    
+    function preloadWatermarkLogo() {
+      return new Promise((resolve) => {
+        if (watermarkLogoLoaded) {
+          resolve(watermarkLogoLoaded);
+          return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          watermarkLogoLoaded = img;
+          resolve(img);
+        };
+        img.onerror = () => resolve(null);
+        img.src = WATERMARK_LOGO_URL;
+        // Timeout fallback
+        setTimeout(() => resolve(watermarkLogoLoaded), 2000);
+      });
+    }
+    
+    // Preload on page load
+    preloadWatermarkLogo();
+
+    async function addWatermark(ctx, width, height, videoWidth, videoHeight) {
       const now = new Date();
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -954,98 +1046,82 @@ function jsonResponse(data) {
       const timeStr = `${hours}:${minutes}`;
       const locationStr = currentLocation || 'Location unavailable';
       
-      // Detect orientation - portrait or landscape
+      // Detect ACTUAL photo orientation from canvas dimensions
+      // This works for both Android and iPhone
       const isPortrait = height > width;
       
-      // Scale based on shorter side for consistent sizing
+      console.log(`Photo orientation: ${isPortrait ? 'PORTRAIT' : 'LANDSCAPE'} (${width}x${height})`);
+      
+      // Scale based on shorter side for consistent sizing across orientations
       const baseSize = Math.min(width, height);
       const scale = baseSize / 1080;
-      const padding = 30 * scale;
-      const logoSize = 80 * scale;
-      const fontSize = 22 * scale;
-      const lineHeight = 32 * scale;
       
-      // Shadow for all text
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 6 * scale;
-      ctx.shadowOffsetX = 2 * scale;
-      ctx.shadowOffsetY = 2 * scale;
+      // Watermark sizing - bigger for better visibility
+      const padding = 40 * scale;
+      const logoSize = 100 * scale;
+      const fontSize = 26 * scale;
+      const lineHeight = 38 * scale;
       
-      // Calculate watermark position - LEFT BOTTOM
-      let startX = padding;
-      let startY = height - padding;
+      // Shadow for all elements
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 8 * scale;
+      ctx.shadowOffsetX = 3 * scale;
+      ctx.shadowOffsetY = 3 * scale;
       
-      // Try to load and draw logo
-      const WATERMARK_LOGO = 'https://drive.google.com/thumbnail?id=1zaavYZSem-yNHztE724qeIAWw9uGJgen&sz=w200';
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        await new Promise((resolve) => {
-          logoImg.onload = resolve;
-          logoImg.onerror = resolve;
-          logoImg.src = WATERMARK_LOGO;
-          setTimeout(resolve, 800);
-        });
-        
-        if (logoImg.complete && logoImg.naturalWidth > 0) {
-          const logoY = startY - logoSize - lineHeight * 3 - padding;
-          ctx.drawImage(logoImg, startX, logoY, logoSize, logoSize);
-          
-          // Text below logo
-          let textY = logoY + logoSize + lineHeight;
-          
-          // Date
-          ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(dateStr, startX, textY);
-          textY += lineHeight;
-          
-          // Time
-          ctx.font = `bold ${fontSize * 1.4}px Poppins, sans-serif`;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(timeStr, startX, textY);
-          textY += lineHeight;
-          
-          // Location with emoji
-          ctx.font = `${fontSize * 0.9}px Poppins, sans-serif`;
-          ctx.fillStyle = '#ffffff';
-          const maxLocWidth = isPortrait ? width * 0.8 : width * 0.5;
-          const truncatedLoc = truncateText(ctx, locationStr, maxLocWidth);
-          ctx.fillText('📍 ' + truncatedLoc, startX, textY);
-        } else {
-          // Fallback without logo
-          let textY = startY - lineHeight * 2;
-          
-          ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(dateStr, startX, textY);
-          textY += lineHeight;
-          
-          ctx.font = `bold ${fontSize * 1.4}px Poppins, sans-serif`;
-          ctx.fillText(timeStr, startX, textY);
-          textY += lineHeight;
-          
-          ctx.font = `${fontSize * 0.9}px Poppins, sans-serif`;
-          const maxLocWidth = isPortrait ? width * 0.8 : width * 0.5;
-          const truncatedLoc = truncateText(ctx, locationStr, maxLocWidth);
-          ctx.fillText('📍 ' + truncatedLoc, startX, textY);
-        }
-      } catch (e) {
-        // Error fallback
-        let textY = startY - lineHeight * 2;
-        
-        ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
+      // Calculate total watermark height
+      const totalWatermarkHeight = logoSize + lineHeight * 3.5;
+      
+      // Position: LEFT BOTTOM
+      const startX = padding;
+      const startY = height - padding - totalWatermarkHeight;
+      
+      // Draw semi-transparent background for better readability
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      const bgPadding = 15 * scale;
+      const bgWidth = isPortrait ? width * 0.85 : width * 0.45;
+      const bgHeight = totalWatermarkHeight + bgPadding * 2;
+      ctx.beginPath();
+      ctx.roundRect(startX - bgPadding, startY - bgPadding, bgWidth, bgHeight, 12 * scale);
+      ctx.fill();
+      
+      // Re-enable shadow for content
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 8 * scale;
+      
+      // Draw logo
+      let currentY = startY;
+      const logoImg = await preloadWatermarkLogo();
+      
+      if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+        ctx.drawImage(logoImg, startX, currentY, logoSize, logoSize);
+        currentY += logoSize + lineHeight * 0.5;
+      } else {
+        // Fallback: Draw text logo
+        ctx.font = `bold ${fontSize * 1.2}px Poppins, sans-serif`;
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(dateStr, startX, textY);
-        textY += lineHeight;
-        
-        ctx.font = `bold ${fontSize * 1.4}px Poppins, sans-serif`;
-        ctx.fillText(timeStr, startX, textY);
-        textY += lineHeight;
-        
-        ctx.font = `${fontSize * 0.9}px Poppins, sans-serif`;
-        ctx.fillText('📍 ' + locationStr, startX, textY);
+        ctx.fillText('ARCHIPELAGO', startX, currentY + fontSize);
+        currentY += fontSize + lineHeight * 0.3;
       }
+      
+      // Date - white color
+      ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(dateStr, startX, currentY);
+      currentY += lineHeight;
+      
+      // Time - ORANGE color
+      ctx.font = `bold ${fontSize * 1.5}px Poppins, sans-serif`;
+      ctx.fillStyle = '#f59e0b'; // Orange color
+      ctx.fillText(timeStr, startX, currentY);
+      currentY += lineHeight * 1.2;
+      
+      // Location with emoji - white color
+      ctx.font = `${fontSize * 0.85}px Poppins, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      const maxLocWidth = bgWidth - padding * 2;
+      const truncatedLoc = truncateText(ctx, locationStr, maxLocWidth);
+      ctx.fillText('📍 ' + truncatedLoc, startX, currentY);
       
       // Reset shadow
       ctx.shadowColor = 'transparent';
@@ -1827,5 +1903,5 @@ function jsonResponse(data) {
 
     init();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6c60974024e9d5',t:'MTc2NzIxMTM3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6c69c8e0f0e9d5',t:'MTc2NzIxMTc1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
