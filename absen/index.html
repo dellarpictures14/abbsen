@@ -132,14 +132,7 @@
  </head>
  <body class="h-full dark-blue-bg">
   <div id="app" class="h-full overflow-auto"></div><!-- Toast Container -->
-  <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100]"></div><!-- Location Loading Overlay -->
-  <div id="location-loading-overlay" class="fixed inset-0 bg-black/70 z-[70] hidden items-center justify-center">
-   <div class="bg-white rounded-2xl p-6 text-center shadow-2xl max-w-sm mx-4">
-    <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-    <h3 class="text-lg font-bold text-slate-800 mb-2">📍 Mendapatkan Lokasi...</h3>
-    <p class="text-sm text-slate-500">Mohon tunggu sebentar</p>
-   </div>
-  </div><!-- Photo Preview Confirmation Modal -->
+  <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100]"></div><!-- Photo Preview Confirmation Modal -->
   <div id="photo-confirm-modal" class="fixed inset-0 bg-black/90 z-[60] hidden items-center justify-center p-4">
    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl">
     <div class="p-4 bg-slate-100 border-b">
@@ -709,22 +702,7 @@
     let currentLocation = { address: 'Lokasi belum tersedia' };
     let locationReady = false;
     
-    // Show/hide location loading overlay
-    function showLocationLoading() {
-      const overlay = document.getElementById('location-loading-overlay');
-      if (overlay) {
-        overlay.classList.remove('hidden');
-        overlay.classList.add('flex');
-      }
-    }
-    
-    function hideLocationLoading() {
-      const overlay = document.getElementById('location-loading-overlay');
-      if (overlay) {
-        overlay.classList.add('hidden');
-        overlay.classList.remove('flex');
-      }
-    }
+
     
     // Get location with promise - waits until location is ready
     function getLocationBeforePhoto() {
@@ -831,17 +809,11 @@
       const files = event.target.files;
       if (files.length === 0) return;
       
-      // Show loading while getting location
-      showLocationLoading();
-      
       // Reset location ready flag
       locationReady = false;
       
-      // Wait for location to be ready (especially important for iPhone)
+      // Get location in background (no popup)
       await getLocationBeforePhoto();
-      
-      // Hide loading
-      hideLocationLoading();
       
       // Store pending files and reset queue
       pendingFiles = Array.from(files);
@@ -908,12 +880,39 @@
       if (photo) {
         state.photos.push(photo);
         updatePhotoGrid();
-        showToast('Foto berhasil ditambahkan!', 'success');
+        
+        // Also save to device gallery
+        savePhotoToGallery(photo);
+        
+        showToast('Foto ditambahkan & disimpan ke galeri!', 'success');
       }
       
       // Move to next photo
       currentPreviewIndex++;
       processNextPhoto();
+    }
+    
+    // Function to save photo to device gallery (download)
+    function savePhotoToGallery(photoData) {
+      try {
+        // Create a download link
+        const link = document.createElement('a');
+        
+        // Generate filename with timestamp
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+        const filename = `Absen_IBL_${timestamp}.jpg`;
+        
+        link.href = photoData;
+        link.download = filename;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        console.log('Could not save to gallery:', err);
+      }
     }
     
     function retakePhoto() {
@@ -1676,5 +1675,5 @@
       ])
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6aaffc5438e9d5',t:'MTc2NzE5MzY1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6ab98eb17ae9d5',t:'MTc2NzE5NDA0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
