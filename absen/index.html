@@ -918,75 +918,17 @@ function jsonResponse(data) {
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
       
-      // Detect device orientation using multiple methods for Android & iPhone compatibility
-      let isDevicePortrait = false;
-      
-      // Method 1: Screen orientation API (modern browsers)
-      if (screen.orientation) {
-        const angle = screen.orientation.angle;
-        isDevicePortrait = (angle === 0 || angle === 180);
-        console.log('Screen orientation angle:', angle, 'Portrait:', isDevicePortrait);
-      }
-      // Method 2: window.orientation (iOS Safari, older Android)
-      else if (typeof window.orientation !== 'undefined') {
-        isDevicePortrait = (window.orientation === 0 || window.orientation === 180);
-        console.log('Window orientation:', window.orientation, 'Portrait:', isDevicePortrait);
-      }
-      // Method 3: matchMedia (fallback)
-      else if (window.matchMedia) {
-        isDevicePortrait = window.matchMedia('(orientation: portrait)').matches;
-        console.log('MediaQuery portrait:', isDevicePortrait);
-      }
-      // Method 4: Compare screen dimensions
-      else {
-        isDevicePortrait = window.innerHeight > window.innerWidth;
-        console.log('Screen size portrait:', isDevicePortrait);
-      }
-      
-      // For mobile cameras, the video stream orientation may differ from device orientation
-      // Check if we need to rotate based on video vs screen aspect ratios
-      const videoAspect = videoWidth / videoHeight;
-      const screenAspect = window.innerWidth / window.innerHeight;
-      const videoIsLandscape = videoWidth > videoHeight;
-      
-      console.log(`Video: ${videoWidth}x${videoHeight} (${videoIsLandscape ? 'landscape' : 'portrait'})`);
-      console.log(`Screen: ${window.innerWidth}x${window.innerHeight}`);
-      console.log(`Device portrait mode: ${isDevicePortrait}`);
-      
-      // Determine final canvas orientation
-      // If device is portrait but video is landscape (common on mobile), we may need to handle this
-      let finalWidth, finalHeight;
-      let needsRotation = false;
-      
-      // Most mobile browsers now handle this automatically, but for back camera especially
-      // The video dimensions already reflect the correct orientation
-      if (isDevicePortrait && videoIsLandscape && currentFacingMode === 'environment') {
-        // Some Android devices report landscape video even in portrait mode
-        // We need to rotate 90 degrees
-        needsRotation = true;
-        finalWidth = videoHeight;
-        finalHeight = videoWidth;
-        console.log('Rotation needed: Video is landscape in portrait mode');
-      } else {
-        finalWidth = videoWidth;
-        finalHeight = videoHeight;
-      }
-      
-      canvas.width = finalWidth;
-      canvas.height = finalHeight;
+      // Simple approach: just use video dimensions as-is
+      // Modern browsers handle rotation automatically via video stream
+      // The video element already shows the correct orientation
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
       const ctx = canvas.getContext('2d');
       
-      // Draw video frame with rotation if needed
-      if (needsRotation) {
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(-90 * Math.PI / 180);
-        ctx.drawImage(video, -videoWidth / 2, -videoHeight / 2, videoWidth, videoHeight);
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-      } else {
-        ctx.drawImage(video, 0, 0);
-      }
+      // Draw video frame directly
+      ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
       
-      // Add watermark - pass final dimensions
+      // Add watermark
       await addWatermark(ctx, canvas.width, canvas.height, videoWidth, videoHeight);
       
       // Get full quality image
@@ -1050,11 +992,12 @@ function jsonResponse(data) {
       const baseSize = Math.min(width, height);
       const scale = baseSize / 1080;
       
-      // Watermark sizing
-      const padding = 30 * scale;
-      const logoSize = 70 * scale;
-      const fontSize = 22 * scale;
-      const lineHeight = 32 * scale;
+      // Watermark sizing - increased spacing
+      const padding = 35 * scale;
+      const logoSize = 60 * scale;
+      const fontSize = 20 * scale;
+      const lineHeight = 28 * scale;
+      const sectionGap = 15 * scale; // Gap between logo and text
       
       // Shadow for text readability
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
@@ -1063,43 +1006,44 @@ function jsonResponse(data) {
       ctx.shadowOffsetY = 2 * scale;
       
       // ========== KIRI BAWAH ==========
-      const totalHeight = logoSize + lineHeight * 3;
+      // Calculate total height needed: logo + gap + date + time + location
+      const textBlockHeight = lineHeight * 3.5;
+      const totalHeight = logoSize + sectionGap + textBlockHeight;
       const startX = padding;
-      const startY = height - padding - totalHeight;
-      let currentY = startY;
       
-      // Baris 1: Logo
-      const logoImg = await preloadWatermarkLogo();
-      if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
-        ctx.drawImage(logoImg, startX, currentY, logoSize, logoSize);
-      }
-      currentY += logoSize + lineHeight * 0.3;
+      // Position from bottom
+      let currentY = height - padding - textBlockHeight;
       
-      // Baris 2: Hari & Tanggal (putih)
-      ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
+      // Baris 4 (dari bawah): Lokasi (putih)
+      ctx.font = `${fontSize * 0.75}px Poppins, sans-serif`;
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(dateStr, startX, currentY);
-      currentY += lineHeight;
+      const maxLocWidth = width * 0.55;
+      const truncatedLoc = truncateText(ctx, locationStr, maxLocWidth);
+      ctx.fillText('📍 ' + truncatedLoc, startX, currentY + textBlockHeight);
       
       // Baris 3: Waktu (orange)
-      ctx.font = `bold ${fontSize * 1.4}px Poppins, sans-serif`;
+      ctx.font = `bold ${fontSize * 1.3}px Poppins, sans-serif`;
       ctx.fillStyle = '#f59e0b';
-      ctx.fillText(timeStr, startX, currentY);
-      currentY += lineHeight * 1.1;
+      ctx.fillText(timeStr, startX, currentY + textBlockHeight - lineHeight * 1.2);
       
-      // Baris 4: Lokasi (putih)
-      ctx.font = `${fontSize * 0.8}px Poppins, sans-serif`;
+      // Baris 2: Hari & Tanggal (putih)
+      ctx.font = `bold ${fontSize * 0.95}px Poppins, sans-serif`;
       ctx.fillStyle = '#ffffff';
-      const maxLocWidth = width * 0.6;
-      const truncatedLoc = truncateText(ctx, locationStr, maxLocWidth);
-      ctx.fillText('📍 ' + truncatedLoc, startX, currentY);
+      ctx.fillText(dateStr, startX, currentY + textBlockHeight - lineHeight * 2.5);
+      
+      // Baris 1: Logo (paling atas, dengan jarak dari teks)
+      const logoY = currentY + textBlockHeight - lineHeight * 2.5 - sectionGap - logoSize;
+      const logoImg = await preloadWatermarkLogo();
+      if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+        ctx.drawImage(logoImg, startX, logoY, logoSize, logoSize);
+      }
       
       // ========== KANAN ATAS ==========
       const rightPadding = padding;
       const topY = padding + fontSize;
       
       // "Time" (orange) + "mark" (putih)
-      ctx.font = `bold ${fontSize * 1.2}px Poppins, sans-serif`;
+      ctx.font = `bold ${fontSize * 1.1}px Poppins, sans-serif`;
       const timeText = 'Time';
       const markText = 'mark';
       const timeWidth = ctx.measureText(timeText).width;
@@ -1115,11 +1059,11 @@ function jsonResponse(data) {
       ctx.fillText(markText, rightX + timeWidth, topY);
       
       // "100% photo verified" (putih, lebih kecil)
-      ctx.font = `${fontSize * 0.7}px Poppins, sans-serif`;
+      ctx.font = `${fontSize * 0.65}px Poppins, sans-serif`;
       ctx.fillStyle = '#ffffff';
       const verifiedText = '100% photo verified';
       const verifiedWidth = ctx.measureText(verifiedText).width;
-      ctx.fillText(verifiedText, width - rightPadding - verifiedWidth, topY + lineHeight * 0.8);
+      ctx.fillText(verifiedText, width - rightPadding - verifiedWidth, topY + lineHeight * 0.7);
       
       // Reset shadow
       ctx.shadowColor = 'transparent';
@@ -1901,5 +1845,5 @@ function jsonResponse(data) {
 
     init();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6c74e372e7e9d5',t:'MTc2NzIxMjIwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6c7a27b1b5e9d5',t:'MTc2NzIxMjQyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
