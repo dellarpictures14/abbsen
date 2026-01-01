@@ -889,13 +889,14 @@ function jsonResponse(data) {
       const baseSize = Math.min(width, height);
       const scale = baseSize / 1080;
       
-      // 90% larger sizes (original * 1.90)
-      const padding = 67 * scale;
-      const logoSize = 114 * scale;
+      // Updated sizes - Logo lebih besar, jarak lebih rapat
+      const padding = 50 * scale;
+      const logoSize = 200 * scale;  // Logo 200px (diperbesar)
       const fontSize = 38 * scale;
-      const lineHeight = 53 * scale;
-      const sectionGap = 48 * scale;
-      const cornerRadius = 12 * scale;
+      const lineHeight = 45 * scale;
+      const logoToTimeGap = 12 * scale;  // Jarak logo ke jam dipersempit (12px)
+      const timeToLocGap = 8 * scale;    // Jarak jam ke lokasi dipersempit (8px)
+      const cornerRadius = 20 * scale;   // Corner radius menyesuaikan logo besar
       
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 10 * scale;
@@ -907,14 +908,15 @@ function jsonResponse(data) {
       // Calculate positions from bottom
       const bottomY = height - padding;
       
-      // Baris 3: Location (paling bawah)
+      // Baris 3: Location (paling bawah) - max setengah lebar layar
       let locationY = bottomY;
+      const maxLocationWidth = width * 0.5;  // Maksimal setengah halaman
+      
       if (locationStr && locationStr !== 'Mendapatkan lokasi...' && !locationStr.includes('Gagal') && !locationStr.includes('ditolak')) {
         ctx.font = `${fontSize * 0.65}px Poppins, sans-serif`;
         ctx.fillStyle = '#ffffff';
         
-        // Word wrap untuk lokasi panjang
-        const maxWidth = width - padding * 2;
+        // Word wrap untuk lokasi - maksimal setengah lebar layar
         const words = locationStr.split(' ');
         let lines = [];
         let currentLine = '📍 ';
@@ -922,9 +924,9 @@ function jsonResponse(data) {
         words.forEach(word => {
           const testLine = currentLine + word + ' ';
           const testWidth = ctx.measureText(testLine).width;
-          if (testWidth > maxWidth && currentLine !== '📍 ') {
+          if (testWidth > maxLocationWidth && currentLine !== '📍 ') {
             lines.push(currentLine.trim());
-            currentLine = word + ' ';
+            currentLine = '   ' + word + ' ';  // Indent untuk baris lanjutan
           } else {
             currentLine = testLine;
           }
@@ -932,16 +934,16 @@ function jsonResponse(data) {
         lines.push(currentLine.trim());
         
         // Draw location lines from bottom up
-        const locLineHeight = fontSize * 0.8;
+        const locLineHeight = fontSize * 0.85;
         for (let i = lines.length - 1; i >= 0; i--) {
           ctx.fillText(lines[i], startX, locationY);
           locationY -= locLineHeight;
         }
-        locationY -= lineHeight * 0.3;
+        locationY -= timeToLocGap;  // Jarak ke jam dipersempit
       }
       
       // Baris 2: Jam | garis | Tanggal + Hari
-      const row2Y = locationY - lineHeight * 0.5;
+      const row2Y = locationY;
       
       // Jam (kuning, besar)
       ctx.font = `bold ${fontSize * 1.5}px Poppins, sans-serif`;
@@ -949,7 +951,7 @@ function jsonResponse(data) {
       ctx.fillText(timeStr, startX, row2Y);
       
       const timeWidth = ctx.measureText(timeStr).width;
-      const lineX = startX + timeWidth + fontSize * 0.6;
+      const lineX = startX + timeWidth + fontSize * 0.5;
       
       // Garis vertikal kuning
       ctx.strokeStyle = '#f59e0b';
@@ -960,7 +962,7 @@ function jsonResponse(data) {
       ctx.stroke();
       
       // Tanggal (putih, di samping garis - baris atas)
-      const textStartX = lineX + fontSize * 0.6;
+      const textStartX = lineX + fontSize * 0.5;
       ctx.font = `bold ${fontSize * 0.85}px Poppins, sans-serif`;
       ctx.fillStyle = '#ffffff';
       ctx.fillText(dateStr, textStartX, row2Y - fontSize * 0.5);
@@ -970,8 +972,8 @@ function jsonResponse(data) {
       ctx.fillStyle = '#ffffff';
       ctx.fillText(dayName, textStartX, row2Y + fontSize * 0.2);
       
-      // Baris 1: Logo dengan rounded corners
-      const logoY = row2Y - fontSize * 1.5 - sectionGap - logoSize;
+      // Baris 1: Logo dengan rounded corners - jarak dipersempit
+      const logoY = row2Y - fontSize * 1.5 - logoToTimeGap - logoSize;
       const logoImg = await preloadWatermarkLogo();
       if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
         // Draw rounded rectangle clip for logo
@@ -992,7 +994,7 @@ function jsonResponse(data) {
         ctx.restore();
       }
       
-      // Top right: Timemark (90% larger)
+      // Top right: Timemark
       const rightPadding = padding;
       const topY = padding + fontSize;
       
@@ -1719,5 +1721,5 @@ function jsonResponse(data) {
 
     init();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6e3d22b7a1e9d5',t:'MTc2NzIzMDg5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6e5bf6c028e9d5',t:'MTc2NzIzMjE1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
