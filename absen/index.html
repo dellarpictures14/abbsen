@@ -209,6 +209,15 @@
     .nav-btn.next {
       right: 20px;
     }
+    
+    .location-status {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
   </style>
   <style>@view-transition { navigation: auto; }</style>
  </head>
@@ -245,7 +254,11 @@
       </div>
      </div>
     </header>
-    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
+    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full"><!-- Location Status Banner -->
+     <div id="locationBanner" class="bg-white rounded-xl p-3 mb-4 flex items-center justify-between">
+      <div class="flex items-center gap-2"><span id="locationIcon" class="text-lg">📍</span> <span id="locationText" class="text-sm text-gray-600">Mendapatkan lokasi...</span>
+      </div><button onclick="refreshLocation()" class="text-blue-500 text-sm hover:underline">Refresh</button>
+     </div>
      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div class="flex gap-3"><button onclick="setAllPresent()" class="px-5 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all font-semibold shadow-lg flex items-center gap-2">
         <svg class="w-5 h-5" fill="white" viewbox="0 0 24 24">
@@ -667,6 +680,10 @@ function jsonResponse(data) {
     let currentViewerIndex = 0;
     let currentViewerPhotos = [];
     
+    // Location state
+    let currentLocation = null;
+    let locationAddress = 'Mendapatkan lokasi...';
+    
     const SHEET_ID = '1FllBcwBjTr_jfPylhyWwHt6ZE16j6fJpSa0C9hYEw44';
     const SHEET_NAME = 'Form responses 1';
     const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
@@ -696,6 +713,81 @@ function jsonResponse(data) {
     }
     
     preloadWatermarkLogo();
+
+    // ==================== LOCATION ====================
+    function getCurrentLocation() {
+      updateLocationUI('loading', 'Mendapatkan lokasi...');
+      
+      if (!navigator.geolocation) {
+        updateLocationUI('error', 'Geolokasi tidak didukung');
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          currentLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          // Get address from coordinates using reverse geocoding
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLocation.lat}&lon=${currentLocation.lng}&zoom=18&addressdetails=1`);
+            const data = await response.json();
+            
+            if (data && data.display_name) {
+              // Shorten the address
+              const parts = data.display_name.split(',');
+              locationAddress = parts.slice(0, 3).join(',').trim();
+            } else {
+              locationAddress = `${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
+            }
+          } catch (error) {
+            locationAddress = `${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
+          }
+          
+          updateLocationUI('success', locationAddress);
+        },
+        (error) => {
+          let errorMsg = 'Gagal mendapatkan lokasi';
+          if (error.code === 1) errorMsg = 'Akses lokasi ditolak';
+          else if (error.code === 2) errorMsg = 'Lokasi tidak tersedia';
+          else if (error.code === 3) errorMsg = 'Timeout mendapatkan lokasi';
+          
+          updateLocationUI('error', errorMsg);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    }
+    
+    function updateLocationUI(status, text) {
+      const icon = document.getElementById('locationIcon');
+      const textEl = document.getElementById('locationText');
+      const banner = document.getElementById('locationBanner');
+      
+      textEl.textContent = text;
+      
+      if (status === 'loading') {
+        icon.textContent = '⏳';
+        banner.className = 'bg-white rounded-xl p-3 mb-4 flex items-center justify-between';
+      } else if (status === 'success') {
+        icon.textContent = '📍';
+        banner.className = 'bg-green-50 border border-green-200 rounded-xl p-3 mb-4 flex items-center justify-between';
+        textEl.className = 'text-sm text-green-700';
+      } else if (status === 'error') {
+        icon.textContent = '⚠️';
+        banner.className = 'bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-center justify-between';
+        textEl.className = 'text-sm text-red-600';
+      }
+    }
+    
+    function refreshLocation() {
+      getCurrentLocation();
+    }
 
     // ==================== PHOTO UPLOAD HANDLER ====================
     async function handlePhotoUpload(event) {
@@ -746,8 +838,8 @@ function jsonResponse(data) {
             // Draw original image
             ctx.drawImage(img, 0, 0);
             
-            // Add watermark
-            await addWatermark(ctx, canvas.width, canvas.height);
+            // Add watermark with location
+            await addWatermark(ctx, canvas.width, canvas.height, locationAddress);
             
             // Get full resolution with watermark
             const fullData = canvas.toDataURL('image/jpeg', 0.92);
@@ -777,7 +869,7 @@ function jsonResponse(data) {
       });
     }
 
-    async function addWatermark(ctx, width, height) {
+    async function addWatermark(ctx, width, height, locationStr) {
       const now = new Date();
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -795,21 +887,29 @@ function jsonResponse(data) {
       const baseSize = Math.min(width, height);
       const scale = baseSize / 1080;
       
-      const padding = 35 * scale;
-      const logoSize = 60 * scale;
-      const fontSize = 20 * scale;
-      const lineHeight = 28 * scale;
-      const sectionGap = 25 * scale;
+      // 75% larger sizes (original * 1.75)
+      const padding = 61 * scale;
+      const logoSize = 105 * scale;
+      const fontSize = 35 * scale;
+      const lineHeight = 49 * scale;
+      const sectionGap = 44 * scale;
       
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 6 * scale;
-      ctx.shadowOffsetX = 2 * scale;
-      ctx.shadowOffsetY = 2 * scale;
+      ctx.shadowBlur = 10 * scale;
+      ctx.shadowOffsetX = 3 * scale;
+      ctx.shadowOffsetY = 3 * scale;
       
-      const textBlockHeight = lineHeight * 3.5;
+      const textBlockHeight = lineHeight * 4.5;
       const startX = padding;
       
       let currentY = height - padding - textBlockHeight;
+      
+      // Location (white with pin emoji) - at the bottom
+      if (locationStr && locationStr !== 'Mendapatkan lokasi...' && !locationStr.includes('Gagal') && !locationStr.includes('ditolak')) {
+        ctx.font = `${fontSize * 0.7}px Poppins, sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('📍 ' + locationStr, startX, currentY + textBlockHeight);
+      }
       
       // Time (orange)
       ctx.font = `bold ${fontSize * 1.3}px Poppins, sans-serif`;
@@ -1538,6 +1638,8 @@ function jsonResponse(data) {
       if (username === 'archipelago' && password === 'balivibes') {
         document.getElementById('loginError').classList.add('hidden');
         showPage('absensiPage');
+        // Get location after login
+        getCurrentLocation();
       } else {
         document.getElementById('loginError').classList.remove('hidden');
       }
@@ -1553,5 +1655,5 @@ function jsonResponse(data) {
 
     init();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6e230d86e8e9d5',t:'MTc2NzIyOTgyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6e327434cee9d5',t:'MTc2NzIzMDQ1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
