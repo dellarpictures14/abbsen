@@ -144,12 +144,21 @@
     }
     
     .loading-spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #1e3a5f;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #1e3a5f;
       border-radius: 50%;
-      width: 60px;
-      height: 60px;
+      width: 40px;
+      height: 40px;
       animation: spin 1s linear infinite;
+    }
+    
+    @media (min-width: 640px) {
+      .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #1e3a5f;
+        width: 60px;
+        height: 60px;
+      }
     }
     
     @keyframes spin {
@@ -292,7 +301,7 @@
       </div>
       <div class="flex items-center flex-shrink-0">
        <div class="text-right">
-        <div id="currentDate" class="text-[10px] sm:text-xs font-medium text-gray-300 hidden sm:block"></div>
+        <div id="currentDate" class="text-[9px] sm:text-xs font-medium text-gray-300"></div>
         <div class="flex items-center gap-1"><span id="currentTime" class="text-base sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="timezone" class="text-base sm:text-xl md:text-2xl font-bold clock-time"></span>
         </div>
        </div>
@@ -326,9 +335,9 @@
        </div>
       </div>
      </div>
-     <div id="loadingWorkers" class="flex flex-col items-center justify-center py-12">
-      <div class="loading-spinner mb-4"></div>
-      <p class="text-white font-medium">Memuat data pekerja...</p>
+     <div id="loadingWorkers" class="flex flex-col items-center justify-center py-8 sm:py-12">
+      <div class="loading-spinner mb-3 sm:mb-4"></div>
+      <p class="text-white font-medium text-sm sm:text-base">Memuat data pekerja...</p>
      </div>
      <div id="searchResults" class="hidden mb-6">
       <div class="w-full">
@@ -396,23 +405,23 @@
       <h1 class="text-lg md:text-xl font-bold text-white uppercase tracking-wide">RECAP HARI INI</h1>
      </div>
     </header>
-    <div class="flex justify-between gap-3 p-4 max-w-7xl mx-auto w-full flex-wrap"><button id="refreshBtnToday" onclick="refreshDataFromSheet('today')" class="px-5 py-2 bg-cyan-500 text-white rounded-xl hover:bg-cyan-600 transition-all font-medium flex items-center gap-2">
-      <svg class="w-5 h-5 refresh-icon" fill="white" viewbox="0 0 24 24">
+    <div class="flex justify-between gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full flex-wrap"><button id="refreshBtnToday" onclick="refreshDataFromSheet('today')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-cyan-500 text-white rounded-lg sm:rounded-xl hover:bg-cyan-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5 refresh-icon" fill="white" viewbox="0 0 24 24">
        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-      </svg> Refresh Data </button>
-     <div class="flex gap-3"><button onclick="showPage('recapMenuPage')" class="px-5 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-2">
-       <svg class="w-5 h-5" fill="white" viewbox="0 0 24 24">
+      </svg><span class="hidden xs:inline">Refresh</span> </button>
+     <div class="flex gap-1.5 sm:gap-3"><button onclick="showPage('recapMenuPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
         <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-       </svg> Kembali </button> <button onclick="showPage('absensiPage')" class="px-5 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all font-medium flex items-center gap-2">
-       <svg class="w-5 h-5" fill="white" viewbox="0 0 24 24">
+       </svg><span class="hidden xs:inline">Kembali</span> </button> <button onclick="showPage('absensiPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-       </svg> Home </button>
+       </svg><span class="hidden xs:inline">Home</span> </button>
      </div>
     </div>
-    <main class="flex-1 p-6 max-w-4xl mx-auto w-full">
-     <div id="todayRecapDate" class="text-center text-lg font-semibold text-gray-300 mb-4"></div>
-     <div id="todayStatusCards" class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6"></div>
-     <div id="todayRecapContent" class="bg-white rounded-2xl shadow-lg overflow-hidden"></div>
+    <main class="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full">
+     <div id="todayRecapDate" class="text-center text-sm sm:text-lg font-semibold text-gray-300 mb-3 sm:mb-4"></div>
+     <div id="todayStatusCards" class="grid grid-cols-5 gap-1.5 sm:gap-3 mb-3 sm:mb-6"></div>
+     <div id="todayRecapContent" class="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden"></div>
     </main>
    </div><!-- CALENDAR PAGE -->
    <div id="calendarPage" class="page flex-col min-h-full w-full soft-navy-bg">
@@ -421,46 +430,46 @@
       <h1 class="text-lg md:text-xl font-bold text-white uppercase tracking-wide">PILIH TANGGAL</h1>
      </div>
     </header>
-    <div class="flex justify-end gap-3 p-4 max-w-7xl mx-auto w-full"><button onclick="showPage('recapMenuPage')" class="px-5 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-2">
-      <svg class="w-5 h-5" fill="white" viewbox="0 0 24 24">
+    <div class="flex justify-end gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full"><button onclick="showPage('recapMenuPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-      </svg> Kembali </button>
+      </svg><span class="hidden xs:inline">Kembali</span> </button>
     </div>
-    <main class="flex-1 p-6 max-w-lg mx-auto w-full">
-     <div class="bg-white rounded-2xl shadow-lg p-6">
-      <div class="flex items-center justify-between mb-6"><button onclick="changeMonth(-1)" class="p-2 hover:bg-gray-100 rounded-lg transition-all">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+    <main class="flex-1 p-3 sm:p-6 max-w-lg mx-auto w-full">
+     <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-6">
+      <div class="flex items-center justify-between mb-3 sm:mb-6"><button onclick="changeMonth(-1)" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-all">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg></button>
-       <h2 id="calendarMonth" class="text-xl font-bold text-gray-800"></h2><button onclick="changeMonth(1)" class="p-2 hover:bg-gray-100 rounded-lg transition-all">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+       <h2 id="calendarMonth" class="text-base sm:text-xl font-bold text-gray-800"></h2><button onclick="changeMonth(1)" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-all">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg></button>
       </div>
-      <div class="grid grid-cols-7 gap-1 mb-2">
-       <div class="text-center text-sm font-medium text-gray-500 py-2">
+      <div class="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
         Min
        </div>
-       <div class="text-center text-sm font-medium text-gray-500 py-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
         Sen
        </div>
-       <div class="text-center text-sm font-medium text-gray-500 py-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
         Sel
        </div>
-       <div class="text-center text-sm font-medium text-gray-500 py-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
         Rab
        </div>
-       <div class="text-center text-sm font-medium text-gray-500 py-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
         Kam
        </div>
-       <div class="text-center text-sm font-medium text-gray-500 py-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
         Jum
        </div>
-       <div class="text-center text-sm font-medium text-gray-500 py-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
         Sab
        </div>
       </div>
-      <div id="calendarDays" class="grid grid-cols-7 gap-1"></div>
+      <div id="calendarDays" class="grid grid-cols-7 gap-0.5 sm:gap-1"></div>
      </div>
     </main>
    </div><!-- DATE RECAP PAGE -->
@@ -470,22 +479,22 @@
       <h1 id="dateRecapTitle" class="text-lg md:text-xl font-bold text-white uppercase tracking-wide">RECAP TANGGAL</h1>
      </div>
     </header>
-    <div class="flex justify-between gap-3 p-4 max-w-7xl mx-auto w-full flex-wrap"><button id="refreshBtnDate" onclick="refreshDataFromSheet('date')" class="px-5 py-2 bg-cyan-500 text-white rounded-xl hover:bg-cyan-600 transition-all font-medium flex items-center gap-2">
-      <svg class="w-5 h-5 refresh-icon" fill="white" viewbox="0 0 24 24">
+    <div class="flex justify-between gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full flex-wrap"><button id="refreshBtnDate" onclick="refreshDataFromSheet('date')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-cyan-500 text-white rounded-lg sm:rounded-xl hover:bg-cyan-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5 refresh-icon" fill="white" viewbox="0 0 24 24">
        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-      </svg> Refresh Data </button>
-     <div class="flex gap-3"><button onclick="showPage('calendarPage')" class="px-5 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-2">
-       <svg class="w-5 h-5" fill="white" viewbox="0 0 24 24">
+      </svg><span class="hidden xs:inline">Refresh</span> </button>
+     <div class="flex gap-1.5 sm:gap-3"><button onclick="showPage('calendarPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
         <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-       </svg> Kembali </button> <button onclick="showPage('absensiPage')" class="px-5 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all font-medium flex items-center gap-2">
-       <svg class="w-5 h-5" fill="white" viewbox="0 0 24 24">
+       </svg><span class="hidden xs:inline">Kembali</span> </button> <button onclick="showPage('absensiPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-       </svg> Home </button>
+       </svg><span class="hidden xs:inline">Home</span> </button>
      </div>
     </div>
-    <main class="flex-1 p-6 max-w-4xl mx-auto w-full">
-     <div id="dateStatusCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6"></div>
-     <div id="dateRecapContent" class="bg-white rounded-2xl shadow-lg overflow-hidden"></div>
+    <main class="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full">
+     <div id="dateStatusCards" class="grid grid-cols-5 gap-1.5 sm:gap-3 mb-3 sm:mb-6"></div>
+     <div id="dateRecapContent" class="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden"></div>
     </main>
    </div><!-- PHOTO FOLDERS PAGE -->
    <div id="photoFoldersPage" class="page flex-col min-h-full w-full soft-navy-bg">
@@ -500,9 +509,9 @@
       </svg> Kembali </button>
     </div>
     <main class="flex-1 p-6 max-w-4xl mx-auto w-full">
-     <div id="photoFoldersLoading" class="flex flex-col items-center justify-center py-12">
-      <div class="loading-spinner mb-4"></div>
-      <p class="text-white font-medium">Memuat folder foto...</p>
+     <div id="photoFoldersLoading" class="flex flex-col items-center justify-center py-8 sm:py-12">
+      <div class="loading-spinner mb-3 sm:mb-4"></div>
+      <p class="text-white font-medium text-sm sm:text-base">Memuat folder foto...</p>
      </div>
      <div id="photoFolders" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 hidden"></div>
      <div id="noPhotosMessage" class="hidden text-center py-12 text-gray-300">
@@ -525,22 +534,22 @@
       </svg> Kembali </button>
     </div>
     <main class="flex-1 p-6 max-w-4xl mx-auto w-full">
-     <div id="photoGalleryLoading" class="flex flex-col items-center justify-center py-12">
-      <div class="loading-spinner mb-4"></div>
-      <p class="text-white font-medium">Memuat foto...</p>
+     <div id="photoGalleryLoading" class="flex flex-col items-center justify-center py-8 sm:py-12">
+      <div class="loading-spinner mb-3 sm:mb-4"></div>
+      <p class="text-white font-medium text-sm sm:text-base">Memuat foto...</p>
      </div>
      <div id="photoGallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
     </main>
    </div><!-- STATUS CARD POPUP -->
-   <div id="statusCardPopup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full max-h-[80%] overflow-hidden shadow-2xl fade-in">
-     <div id="statusCardPopupHeader" class="px-6 py-4 flex items-center justify-between bg-gray-500">
-      <h3 id="statusCardPopupTitle" class="text-xl font-bold text-white">Daftar Pekerja</h3><button onclick="closeStatusCardPopup()" class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-all">
-       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+   <div id="statusCardPopup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-3 sm:p-4">
+    <div class="bg-white rounded-xl sm:rounded-2xl max-w-md w-full max-h-[85%] overflow-hidden shadow-2xl fade-in">
+     <div id="statusCardPopupHeader" class="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between bg-gray-500">
+      <h3 id="statusCardPopupTitle" class="text-base sm:text-xl font-bold text-white">Daftar Pekerja</h3><button onclick="closeStatusCardPopup()" class="text-white hover:bg-white hover:bg-opacity-20 p-1.5 sm:p-2 rounded-lg transition-all">
+       <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
        </svg></button>
      </div>
-     <div id="statusCardPopupContent" class="p-6 overflow-y-auto max-h-96"></div>
+     <div id="statusCardPopupContent" class="p-4 sm:p-6 overflow-y-auto max-h-80 sm:max-h-96"></div>
     </div>
    </div><!-- PHOTO VIEWER POPUP -->
    <div id="photoViewer" class="popup-overlay hidden"><button onclick="closePhotoViewer()" class="absolute top-4 right-4 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center z-10">
@@ -1457,11 +1466,11 @@
       const belumAbsen = Math.max(0, totalWorkers - workersWithStatus.size);
       
       return `
-        <div class="bg-green-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-xs sm:text-sm mb-1 sm:mb-2">Start Work</div><div class="text-3xl sm:text-5xl font-bold">${startWork}</div><div class="text-[10px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">dari ${totalWorkers}</div></div>
-        <div class="bg-blue-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-xs sm:text-sm mb-1 sm:mb-2">Finish Work</div><div class="text-3xl sm:text-5xl font-bold">${finishWork}</div><div class="text-[10px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">dari ${totalWorkers}</div></div>
-        <div onclick="showStatusCardPopup('Sakit')" class="bg-orange-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-white shadow-lg text-center status-card-clickable"><div class="font-semibold text-xs sm:text-sm mb-1 sm:mb-2">Sakit</div><div class="text-3xl sm:text-5xl font-bold">${sakit}</div><div class="text-[10px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">dari ${totalWorkers}</div><div class="text-[10px] sm:text-xs mt-1 sm:mt-2 opacity-70">👆 Detail</div></div>
-        <div onclick="showStatusCardPopup('Standby')" class="bg-purple-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-white shadow-lg text-center status-card-clickable"><div class="font-semibold text-xs sm:text-sm mb-1 sm:mb-2">Standby</div><div class="text-3xl sm:text-5xl font-bold">${standby}</div><div class="text-[10px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">dari ${totalWorkers}</div><div class="text-[10px] sm:text-xs mt-1 sm:mt-2 opacity-70">👆 Detail</div></div>
-        <div class="bg-red-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-xs sm:text-sm mb-1 sm:mb-2">Belum Absen</div><div class="text-3xl sm:text-5xl font-bold">${belumAbsen}</div><div class="text-[10px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">dari ${totalWorkers}</div></div>
+        <div class="bg-green-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-[8px] sm:text-sm mb-0.5 sm:mb-2 truncate">Start</div><div class="text-lg sm:text-5xl font-bold">${startWork}</div><div class="text-[7px] sm:text-xs opacity-80 mt-0 sm:mt-1 hidden sm:block">dari ${totalWorkers}</div></div>
+        <div class="bg-blue-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-[8px] sm:text-sm mb-0.5 sm:mb-2 truncate">Finish</div><div class="text-lg sm:text-5xl font-bold">${finishWork}</div><div class="text-[7px] sm:text-xs opacity-80 mt-0 sm:mt-1 hidden sm:block">dari ${totalWorkers}</div></div>
+        <div onclick="showStatusCardPopup('Sakit')" class="bg-orange-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center status-card-clickable"><div class="font-semibold text-[8px] sm:text-sm mb-0.5 sm:mb-2">Sakit</div><div class="text-lg sm:text-5xl font-bold">${sakit}</div><div class="text-[7px] sm:text-xs opacity-80 mt-0 sm:mt-1 hidden sm:block">dari ${totalWorkers}</div></div>
+        <div onclick="showStatusCardPopup('Standby')" class="bg-purple-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center status-card-clickable"><div class="font-semibold text-[8px] sm:text-sm mb-0.5 sm:mb-2">Standby</div><div class="text-lg sm:text-5xl font-bold">${standby}</div><div class="text-[7px] sm:text-xs opacity-80 mt-0 sm:mt-1 hidden sm:block">dari ${totalWorkers}</div></div>
+        <div class="bg-red-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-[8px] sm:text-sm mb-0.5 sm:mb-2 truncate">Belum</div><div class="text-lg sm:text-5xl font-bold">${belumAbsen}</div><div class="text-[7px] sm:text-xs opacity-80 mt-0 sm:mt-1 hidden sm:block">dari ${totalWorkers}</div></div>
       `;
     }
 
@@ -1511,13 +1520,13 @@
       if (workersList.length === 0) {
         content.innerHTML = `<div class="text-center py-8 text-gray-500"><svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>Tidak ada pekerja dengan status ini</p></div>`;
       } else {
-        content.innerHTML = `<div class="space-y-3">${workersList.map((worker, index) => `
-          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl fade-in" style="animation-delay: ${index * 0.05}s">
-            <div class="flex-shrink-0">${worker.photo ? `<img src="${worker.photo}" alt="${worker.name}" class="w-12 h-12 rounded-xl object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div style="display:none;width:48px;height:48px;border-radius:12px;" class="flex items-center justify-center bg-gray-200">${getUserIcon(28)}</div>` : `<div class="w-12 h-12 flex items-center justify-center bg-gray-200 rounded-xl">${getUserIcon(28)}</div>`}</div>
-            <div class="flex-1"><h4 class="font-semibold text-gray-800">${worker.name}</h4></div>
-            <div class="flex-shrink-0"><span class="px-3 py-1 text-xs font-medium text-white rounded-full ${statusColors[statusType]}">${statusType}</span></div>
+        content.innerHTML = `<div class="space-y-2 sm:space-y-3">${workersList.map((worker, index) => `
+          <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl fade-in" style="animation-delay: ${index * 0.05}s">
+            <div class="flex-shrink-0">${worker.photo ? `<img src="${worker.photo}" alt="${worker.name}" class="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div style="display:none;width:36px;height:36px;border-radius:8px;" class="flex items-center justify-center bg-gray-200">${getUserIcon(20)}</div>` : `<div class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-gray-200 rounded-lg sm:rounded-xl">${getUserIcon(20)}</div>`}</div>
+            <div class="flex-1 min-w-0"><h4 class="font-semibold text-gray-800 text-xs sm:text-base truncate">${worker.name}</h4></div>
+            <div class="flex-shrink-0"><span class="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-white rounded-full ${statusColors[statusType]}">${statusType}</span></div>
           </div>
-        `).join('')}</div><div class="mt-4 pt-4 border-t text-center text-sm text-gray-500">Total: <span class="font-bold">${workersList.length}</span> pekerja</div>`;
+        `).join('')}</div><div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t text-center text-xs sm:text-sm text-gray-500">Total: <span class="font-bold">${workersList.length}</span> pekerja</div>`;
       }
       popup.classList.remove('hidden');
     }
@@ -1735,5 +1744,5 @@
     
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b709262b1a6e9d5',t:'MTc2NzI1NTM1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b709f5a5240e9d5',t:'MTc2NzI1NTg4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
