@@ -736,9 +736,11 @@ function jsonResponse(data) {
             const data = await response.json();
             
             if (data && data.display_name) {
-              // Shorten the address
+              // Alamat lengkap tanpa negara
               const parts = data.display_name.split(',');
-              locationAddress = parts.slice(0, 3).join(',').trim();
+              // Hapus "Indonesia" di akhir jika ada
+              const filteredParts = parts.filter(p => !p.trim().toLowerCase().includes('indonesia'));
+              locationAddress = filteredParts.join(',').trim();
             } else {
               locationAddress = `${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
             }
@@ -881,63 +883,125 @@ function jsonResponse(data) {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       
-      const dateStr = `${dayName}, ${day} ${month} ${year}`;
+      const dateStr = `${day} ${month} ${year}`;
       const timeStr = `${hours}:${minutes}`;
       
       const baseSize = Math.min(width, height);
       const scale = baseSize / 1080;
       
-      // 75% larger sizes (original * 1.75)
-      const padding = 61 * scale;
-      const logoSize = 105 * scale;
-      const fontSize = 35 * scale;
-      const lineHeight = 49 * scale;
-      const sectionGap = 44 * scale;
+      // 90% larger sizes (original * 1.90)
+      const padding = 67 * scale;
+      const logoSize = 114 * scale;
+      const fontSize = 38 * scale;
+      const lineHeight = 53 * scale;
+      const sectionGap = 48 * scale;
+      const cornerRadius = 12 * scale;
       
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 10 * scale;
       ctx.shadowOffsetX = 3 * scale;
       ctx.shadowOffsetY = 3 * scale;
       
-      const textBlockHeight = lineHeight * 4.5;
       const startX = padding;
       
-      let currentY = height - padding - textBlockHeight;
+      // Calculate positions from bottom
+      const bottomY = height - padding;
       
-      // Location (white with pin emoji) - at the bottom
+      // Baris 3: Location (paling bawah)
+      let locationY = bottomY;
       if (locationStr && locationStr !== 'Mendapatkan lokasi...' && !locationStr.includes('Gagal') && !locationStr.includes('ditolak')) {
-        ctx.font = `${fontSize * 0.7}px Poppins, sans-serif`;
+        ctx.font = `${fontSize * 0.65}px Poppins, sans-serif`;
         ctx.fillStyle = '#ffffff';
-        ctx.fillText('📍 ' + locationStr, startX, currentY + textBlockHeight);
+        
+        // Word wrap untuk lokasi panjang
+        const maxWidth = width - padding * 2;
+        const words = locationStr.split(' ');
+        let lines = [];
+        let currentLine = '📍 ';
+        
+        words.forEach(word => {
+          const testLine = currentLine + word + ' ';
+          const testWidth = ctx.measureText(testLine).width;
+          if (testWidth > maxWidth && currentLine !== '📍 ') {
+            lines.push(currentLine.trim());
+            currentLine = word + ' ';
+          } else {
+            currentLine = testLine;
+          }
+        });
+        lines.push(currentLine.trim());
+        
+        // Draw location lines from bottom up
+        const locLineHeight = fontSize * 0.8;
+        for (let i = lines.length - 1; i >= 0; i--) {
+          ctx.fillText(lines[i], startX, locationY);
+          locationY -= locLineHeight;
+        }
+        locationY -= lineHeight * 0.3;
       }
       
-      // Time (orange)
-      ctx.font = `bold ${fontSize * 1.3}px Poppins, sans-serif`;
+      // Baris 2: Jam | garis | Tanggal + Hari
+      const row2Y = locationY - lineHeight * 0.5;
+      
+      // Jam (kuning, besar)
+      ctx.font = `bold ${fontSize * 1.5}px Poppins, sans-serif`;
       ctx.fillStyle = '#f59e0b';
-      ctx.fillText(timeStr, startX, currentY + textBlockHeight - lineHeight * 1.2);
+      ctx.fillText(timeStr, startX, row2Y);
       
-      // Date (white)
-      ctx.font = `bold ${fontSize * 0.95}px Poppins, sans-serif`;
+      const timeWidth = ctx.measureText(timeStr).width;
+      const lineX = startX + timeWidth + fontSize * 0.6;
+      
+      // Garis vertikal kuning
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3 * scale;
+      ctx.beginPath();
+      ctx.moveTo(lineX, row2Y - fontSize * 1.2);
+      ctx.lineTo(lineX, row2Y + fontSize * 0.3);
+      ctx.stroke();
+      
+      // Tanggal (putih, di samping garis - baris atas)
+      const textStartX = lineX + fontSize * 0.6;
+      ctx.font = `bold ${fontSize * 0.85}px Poppins, sans-serif`;
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(dateStr, startX, currentY + textBlockHeight - lineHeight * 2.5);
+      ctx.fillText(dateStr, textStartX, row2Y - fontSize * 0.5);
       
-      // Logo (with gap from text)
-      const logoY = currentY + textBlockHeight - lineHeight * 2.5 - sectionGap - logoSize;
+      // Hari (putih, di samping garis - baris bawah)
+      ctx.font = `${fontSize * 0.75}px Poppins, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(dayName, textStartX, row2Y + fontSize * 0.2);
+      
+      // Baris 1: Logo dengan rounded corners
+      const logoY = row2Y - fontSize * 1.5 - sectionGap - logoSize;
       const logoImg = await preloadWatermarkLogo();
       if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+        // Draw rounded rectangle clip for logo
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(startX + cornerRadius, logoY);
+        ctx.lineTo(startX + logoSize - cornerRadius, logoY);
+        ctx.quadraticCurveTo(startX + logoSize, logoY, startX + logoSize, logoY + cornerRadius);
+        ctx.lineTo(startX + logoSize, logoY + logoSize - cornerRadius);
+        ctx.quadraticCurveTo(startX + logoSize, logoY + logoSize, startX + logoSize - cornerRadius, logoY + logoSize);
+        ctx.lineTo(startX + cornerRadius, logoY + logoSize);
+        ctx.quadraticCurveTo(startX, logoY + logoSize, startX, logoY + logoSize - cornerRadius);
+        ctx.lineTo(startX, logoY + cornerRadius);
+        ctx.quadraticCurveTo(startX, logoY, startX + cornerRadius, logoY);
+        ctx.closePath();
+        ctx.clip();
         ctx.drawImage(logoImg, startX, logoY, logoSize, logoSize);
+        ctx.restore();
       }
       
-      // Top right: Timemark
+      // Top right: Timemark (90% larger)
       const rightPadding = padding;
       const topY = padding + fontSize;
       
-      ctx.font = `bold ${fontSize * 1.1}px Poppins, sans-serif`;
+      ctx.font = `bold ${fontSize * 1.2}px Poppins, sans-serif`;
       const timeText = 'Time';
       const markText = 'mark';
-      const timeWidth = ctx.measureText(timeText).width;
+      const timeTextWidth = ctx.measureText(timeText).width;
       const markWidth = ctx.measureText(markText).width;
-      const totalTextWidth = timeWidth + markWidth;
+      const totalTextWidth = timeTextWidth + markWidth;
       
       const rightX = width - rightPadding - totalTextWidth;
       
@@ -945,9 +1009,9 @@ function jsonResponse(data) {
       ctx.fillText(timeText, rightX, topY);
       
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(markText, rightX + timeWidth, topY);
+      ctx.fillText(markText, rightX + timeTextWidth, topY);
       
-      ctx.font = `${fontSize * 0.65}px Poppins, sans-serif`;
+      ctx.font = `${fontSize * 0.7}px Poppins, sans-serif`;
       ctx.fillStyle = '#ffffff';
       const verifiedText = '100% photo verified';
       const verifiedWidth = ctx.measureText(verifiedText).width;
@@ -1655,5 +1719,5 @@ function jsonResponse(data) {
 
     init();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6e327434cee9d5',t:'MTc2NzIzMDQ1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6e3d22b7a1e9d5',t:'MTc2NzIzMDg5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
