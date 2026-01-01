@@ -1760,8 +1760,6 @@ function jsonResponse(data) {
     // ==================== SUBMIT ====================
     async function submitAbsensi() {
       const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<div class="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full"></div> Mengirim...';
       
       const now = new Date();
       const monthsId = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -1777,9 +1775,14 @@ function jsonResponse(data) {
       const photosToProcess = [...capturedPhotos];
       const baseFileName = `Absen_${tanggalFormatted.replace(/ /g, '_')}_${jamFormatted.replace(':', '-')}`;
       
-      // STEP 1: Kirim data absensi dan upload foto ke Drive
+      // Mulai loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<div class="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full"></div> Mengirim...';
+      
+      // STEP 1: Upload semua data (status absensi + foto ke Drive) DULU
       const uploadPromises = [];
       
+      // Upload foto ke Drive
       if (GOOGLE_SCRIPT_URL && photosToProcess.length > 0) {
         photosToProcess.forEach((photo, i) => {
           uploadPromises.push(
@@ -1788,6 +1791,7 @@ function jsonResponse(data) {
         });
       }
       
+      // Kirim data absensi ke spreadsheet
       if (GOOGLE_SCRIPT_URL) {
         uploadPromises.push(
           fetch(GOOGLE_SCRIPT_URL, {
@@ -1818,15 +1822,17 @@ function jsonResponse(data) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = '<svg class="w-6 h-6 transform -rotate-45" fill="white" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Kirim Absensi';
       
-      // Tampilkan toast berhasil
-      showToast('✅ Absensi berhasil dikirim!');
-      
-      // STEP 2: Khusus Android - download foto ke galeri setelah pengiriman selesai
-      if (photosToProcess.length > 0 && isAndroidDevice()) {
-        // Delay sedikit agar toast muncul dulu
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // STEP 2: Setelah upload selesai, langsung muncul share sheet untuk simpan foto
+      if (photosToProcess.length > 0) {
+        // Sedikit delay agar UI update dulu
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Simpan foto ke device (share sheet untuk iOS, download untuk Android)
         await savePhotosToDevice(photosToProcess, baseFileName);
       }
+      
+      // Tampilkan toast berhasil setelah semua proses selesai
+      showToast('✅ Absensi berhasil dikirim!');
     }
     
     async function uploadPhotoToDriveFast(photoData, timestamp, index = 0) {
@@ -2483,7 +2489,6 @@ function jsonResponse(data) {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
       
-      // Login dengan username: archipelago, password: balivibes
       if (username === 'archipelago' && password === 'balivibes') {
         isLoggedIn = true;
         document.getElementById('loginError').classList.add('hidden');
@@ -2503,11 +2508,6 @@ function jsonResponse(data) {
         
         showToast('Login berhasil! Selamat datang.');
       } else {
-        document.getElementById('loginError').classList.remove('hidden');
-      }
-    });
-
-    // ==================== ELEMENT
-</script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6f3ea1c1950ddc',t:'MTc2NzI0MTQ0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        document.getElementById('loginError').classList.remove('hidden');</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b6f56bb250ee8a2',t:'MTc2NzI0MjQyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
