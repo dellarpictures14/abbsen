@@ -1,0 +1,1820 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Absen Archipelago</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    .page {
+      display: none;
+    }
+    
+    .page.active {
+      display: flex;
+    }
+    
+    .soft-navy-bg {
+      background: #1e3a5f;
+    }
+    
+    .darker-header {
+      background: #0f2744;
+    }
+    
+    .status-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .status-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .status-btn.selected {
+      font-weight: 700 !important;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transform: scale(1.05);
+    }
+    
+    .worker-card.selected {
+      background: #ff1493 !important;
+      border: 3px solid #ff006a !important;
+      box-shadow: 0 0 25px rgba(255, 20, 147, 0.7) !important;
+    }
+    
+    .worker-card.selected .worker-name,
+    .worker-card.selected .status-text {
+      color: white !important;
+      font-weight: 700 !important;
+    }
+    
+    .clock-time {
+      color: #f59e0b;
+      font-weight: 700;
+    }
+    
+    .calendar-day:hover {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .calendar-day.has-data {
+      background: #10b981;
+      color: white;
+    }
+    
+    .photo-folder {
+      transition: all 0.3s ease;
+    }
+    
+    .photo-folder:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .gallery-photo {
+      transition: all 0.3s ease;
+    }
+    
+    .gallery-photo:hover {
+      transform: scale(1.05);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.3s ease forwards;
+    }
+    
+    .toast {
+      animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s forwards;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+    
+    .logo-white {
+      filter: brightness(0) invert(1);
+    }
+    
+    .worker-photo-img {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 2px solid #e5e7eb;
+    }
+    
+    @media (min-width: 640px) {
+      .worker-photo-img {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        border: 3px solid #e5e7eb;
+      }
+    }
+    
+    .worker-card.selected .worker-photo-img {
+      border-color: white;
+    }
+    
+    .loading-spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #1e3a5f;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @media (min-width: 640px) {
+      .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #1e3a5f;
+        width: 60px;
+        height: 60px;
+      }
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .photo-thumbnail {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      object-fit: cover;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    @media (min-width: 640px) {
+      .photo-thumbnail {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        border: 3px solid transparent;
+      }
+    }
+    
+    .photo-thumbnail:hover {
+      border-color: #3b82f6;
+      transform: scale(1.05);
+    }
+    
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .popup-image {
+      max-width: 90%;
+      max-height: 70%;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+    
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.2);
+      border: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.4);
+    }
+    
+    .nav-btn.prev {
+      left: 20px;
+    }
+    
+    .nav-btn.next {
+      right: 20px;
+    }
+    
+    .refresh-icon.spinning {
+      animation: spin 1s linear infinite;
+    }
+    
+    .btn-loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    
+    .status-card-clickable {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .status-card-clickable:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    /* Safe area untuk iPhone notch */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .safe-top {
+        padding-top: env(safe-area-inset-top);
+      }
+      .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full soft-navy-bg">
+  <div id="app" class="h-full w-full overflow-auto"><!-- LOGIN PAGE -->
+   <div id="loginPage" class="page active flex-col items-center justify-center min-h-full w-full soft-navy-bg px-4 py-6 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 w-full max-w-md fade-in shadow-2xl">
+     <div class="flex justify-center mb-4 sm:mb-6"><img id="loginLogo" src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w200" alt="Logo Archipelago" class="w-24 h-24 sm:w-32 sm:h-32 object-contain" onerror="this.style.display='none'">
+     </div>
+     <h1 id="companyNameLogin" class="text-xl sm:text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6 sm:mb-8">ARCHIPELAGO DAILY WORKER</h1>
+     <form id="loginForm" class="space-y-4 sm:space-y-5">
+      <div><label for="username" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Username</label> <input type="text" id="username" placeholder="Masukkan username" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none transition-all text-gray-800 bg-white text-sm sm:text-base">
+      </div>
+      <div><label for="password" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Password</label> <input type="password" id="password" placeholder="Masukkan password" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none transition-all text-gray-800 bg-white text-sm sm:text-base">
+      </div>
+      <div id="loginError" class="text-red-500 text-xs sm:text-sm hidden">
+       Username atau password salah!
+      </div><button type="submit" class="w-full py-2.5 sm:py-3 bg-green-500 text-white font-semibold rounded-lg sm:rounded-xl hover:bg-green-600 transition-all shadow-lg text-sm sm:text-base"> Login </button>
+     </form>
+    </div>
+   </div><!-- MAIN ABSENSI PAGE -->
+   <div id="absensiPage" class="page flex-col min-h-full w-full soft-navy-bg">
+    <header class="darker-header shadow-md px-3 sm:px-4 py-2 sm:py-4 sticky top-0 z-50">
+     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"><img src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w100" alt="Logo" class="w-7 h-7 sm:w-10 md:w-12 sm:h-10 md:h-12 object-contain logo-white flex-shrink-0" onerror="this.style.display='none'">
+       <h1 id="appTitleHeader" class="text-[10px] leading-tight sm:text-sm md:text-lg font-bold text-white uppercase tracking-wide sm:truncate">ABSEN ONLINE DAILY WORKER I.B.L.</h1>
+      </div>
+      <div class="flex items-center flex-shrink-0">
+       <div class="text-right">
+        <div id="currentDate" class="text-[8px] sm:text-xs font-medium text-gray-300"></div>
+        <div class="flex items-center gap-0.5 sm:gap-1"><span id="currentTime" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="timezone" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </header>
+    <main class="flex-1 px-3 py-4 sm:p-4 md:p-6 max-w-7xl mx-auto w-full">
+     <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-4">
+      <div class="flex gap-2 sm:gap-3"><button onclick="setAllPresent()" class="px-3 sm:px-4 py-2 sm:py-3 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-all font-semibold shadow-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+        </svg><span class="hidden xs:inline">Hadir</span> Semua </button> <button onclick="resetAllStatus()" class="px-3 sm:px-4 py-2 sm:py-3 bg-red-500 text-white rounded-lg sm:rounded-xl hover:bg-red-600 transition-all font-semibold shadow-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+         <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+        </svg> Reset </button>
+      </div><button onclick="showPage('recapMenuPage')" class="px-3 sm:px-4 py-2 sm:py-3 bg-indigo-600 text-white rounded-lg sm:rounded-xl hover:bg-indigo-700 transition-all font-semibold shadow-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+       </svg> Recap </button>
+     </div>
+     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+      <div class="relative flex-1"><input type="text" id="searchInput" placeholder="Cari nama pekerja..." class="w-full px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-300 focus:border-indigo-500 focus:outline-none transition-all text-gray-800 pl-10 sm:pl-12 bg-white text-sm sm:text-base">
+       <svg class="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+       </svg>
+      </div>
+      <div class="bg-white rounded-lg sm:rounded-xl px-3 sm:px-5 py-2 sm:py-3 shadow-lg flex items-center justify-center gap-4 sm:gap-6">
+       <div class="flex items-center gap-1.5 sm:gap-2"><span class="text-green-500 font-bold text-base sm:text-lg" id="selectedCount">0</span> <span class="text-gray-600 text-xs sm:text-sm">Dipilih</span>
+       </div>
+       <div class="w-px h-5 sm:h-6 bg-gray-300"></div>
+       <div class="flex items-center gap-1.5 sm:gap-2"><span class="text-red-500 font-bold text-base sm:text-lg" id="unselectedCount">0</span> <span class="text-gray-600 text-xs sm:text-sm">Belum</span>
+       </div>
+      </div>
+     </div>
+     <div id="loadingWorkers" class="flex flex-col items-center justify-center py-8 sm:py-12">
+      <div class="loading-spinner mb-3 sm:mb-4"></div>
+      <p class="text-white font-medium text-sm sm:text-base">Memuat data pekerja...</p>
+     </div>
+     <div id="searchResults" class="hidden mb-6">
+      <div class="w-full">
+       <div id="searchResultsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+       </div>
+      </div>
+     </div>
+     <div id="workerGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 hidden">
+     </div>
+     <div class="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg mb-3 sm:mb-4 w-full">
+      <h3 class="font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+       <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="#1e3a5f" viewbox="0 0 24 24">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+       </svg> Upload Foto Absen</h3><label for="photoInput" class="px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-500 text-white rounded-lg sm:rounded-xl cursor-pointer hover:bg-blue-600 transition-all font-medium inline-flex items-center gap-2 text-sm sm:text-base">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+        <path d="M12 15.2c1.77 0 3.2-1.43 3.2-3.2s-1.43-3.2-3.2-3.2-3.2 1.43-3.2 3.2 1.43 3.2 3.2 3.2zM9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+       </svg> Upload Foto </label> <input type="file" id="photoInput" accept="image/*" capture="environment" multiple onchange="handlePhotoUpload(event)">
+      <div id="photoThumbnails" class="mt-3 sm:mt-4 flex flex-wrap gap-2 sm:gap-3 hidden">
+      </div>
+      <p id="photoCount" class="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-500 hidden">0 foto dipilih</p>
+     </div>
+     <div class="mb-6 sm:mb-8 w-full"><button id="submitBtn" onclick="submitAbsensi()" class="w-full py-3 sm:py-4 bg-green-500 text-white rounded-xl font-bold text-base sm:text-lg shadow-xl hover:bg-green-600 hover:shadow-2xl transition-all flex items-center justify-center gap-2">
+       <svg class="w-5 h-5 sm:w-6 sm:h-6 transform -rotate-45" fill="white" viewbox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+       </svg> Kirim Absensi </button>
+     </div>
+    </main>
+   </div><!-- RECAP MENU PAGE -->
+   <div id="recapMenuPage" class="page flex-col min-h-full w-full soft-navy-bg">
+    <header class="darker-header shadow-md px-3 sm:px-4 py-2 sm:py-4 sticky top-0 z-50">
+     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"><img src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w100" alt="Logo" class="w-7 h-7 sm:w-10 md:w-12 sm:h-10 md:h-12 object-contain logo-white flex-shrink-0" onerror="this.style.display='none'">
+       <h1 class="text-[10px] leading-tight sm:text-sm md:text-lg font-bold text-white uppercase tracking-wide sm:truncate">ABSEN ONLINE DAILY WORKER I.B.L.</h1>
+      </div>
+      <div class="flex items-center flex-shrink-0">
+       <div class="text-right">
+        <div id="recapMenuDate" class="text-[8px] sm:text-xs font-medium text-gray-300"></div>
+        <div class="flex items-center gap-0.5 sm:gap-1"><span id="recapMenuTime" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="recapMenuTz" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </header>
+    <div class="flex justify-end gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full"><button onclick="showPage('absensiPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+       <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      </svg><span class="hidden xs:inline">Back to</span> Home </button>
+    </div>
+    <main class="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full">
+     <h2 class="text-lg sm:text-2xl font-bold text-white text-center mb-4 sm:mb-6">Menu Recap</h2>
+     <div class="grid grid-cols-3 gap-2 sm:gap-6"><button onclick="showTodayRecap()" class="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 shadow-lg hover:shadow-xl transition-all text-center sm:text-left group">
+       <div class="mb-2 sm:mb-4 flex justify-center sm:justify-start">
+        <svg class="w-8 h-8 sm:w-12 sm:h-12" fill="#1e3a5f" viewbox="0 0 24 24">
+         <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z" />
+        </svg>
+       </div><h3 class="text-[10px] sm:text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-all leading-tight">Recap Hari Ini</h3><p class="text-gray-500 mt-1 sm:mt-2 text-[8px] sm:text-base hidden sm:block">Lihat absensi hari ini</p></button> <button onclick="showPage('calendarPage')" class="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 shadow-lg hover:shadow-xl transition-all text-center sm:text-left group">
+       <div class="mb-2 sm:mb-4 flex justify-center sm:justify-start">
+        <svg class="w-8 h-8 sm:w-12 sm:h-12" fill="#1e3a5f" viewbox="0 0 24 24">
+         <path d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z" />
+        </svg>
+       </div><h3 class="text-[10px] sm:text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-all leading-tight">Recap Tanggal</h3><p class="text-gray-500 mt-1 sm:mt-2 text-[8px] sm:text-base hidden sm:block">Pilih tanggal di kalender</p></button> <button onclick="showPhotoRecap()" class="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 shadow-lg hover:shadow-xl transition-all text-center sm:text-left group">
+       <div class="mb-2 sm:mb-4 flex justify-center sm:justify-start">
+        <svg class="w-8 h-8 sm:w-12 sm:h-12" fill="#1e3a5f" viewbox="0 0 24 24">
+         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+        </svg>
+       </div><h3 class="text-[10px] sm:text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-all leading-tight">Foto Absen</h3><p class="text-gray-500 mt-1 sm:mt-2 text-[8px] sm:text-base hidden sm:block">Galeri foto absensi</p></button>
+     </div>
+    </main>
+   </div><!-- TODAY RECAP PAGE -->
+   <div id="todayRecapPage" class="page flex-col min-h-full w-full soft-navy-bg">
+    <header class="darker-header shadow-md px-3 sm:px-4 py-2 sm:py-4 sticky top-0 z-50">
+     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"><img src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w100" alt="Logo" class="w-7 h-7 sm:w-10 md:w-12 sm:h-10 md:h-12 object-contain logo-white flex-shrink-0" onerror="this.style.display='none'">
+       <h1 class="text-[10px] leading-tight sm:text-sm md:text-lg font-bold text-white uppercase tracking-wide sm:truncate">ABSEN ONLINE DAILY WORKER I.B.L.</h1>
+      </div>
+      <div class="flex items-center flex-shrink-0">
+       <div class="text-right">
+        <div id="todayRecapHeaderDate" class="text-[8px] sm:text-xs font-medium text-gray-300"></div>
+        <div class="flex items-center gap-0.5 sm:gap-1"><span id="todayRecapHeaderTime" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="todayRecapHeaderTz" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </header>
+    <div class="flex justify-between gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full flex-wrap"><button id="refreshBtnToday" onclick="refreshDataFromSheet('today')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-cyan-500 text-white rounded-lg sm:rounded-xl hover:bg-cyan-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5 refresh-icon" fill="white" viewbox="0 0 24 24">
+       <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+      </svg><span class="hidden xs:inline">Refresh</span> </button>
+     <div class="flex gap-1.5 sm:gap-3"><button onclick="showPage('recapMenuPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+       </svg><span class="hidden xs:inline">Kembali</span> </button> <button onclick="showPage('absensiPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+       </svg><span class="hidden xs:inline">Home</span> </button>
+     </div>
+    </div>
+    <main class="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full">
+     <h2 class="text-base sm:text-xl font-bold text-white text-center mb-1 sm:mb-2">Recap Hari Ini</h2>
+     <div id="todayRecapDate" class="text-center text-xs sm:text-lg font-semibold text-gray-300 mb-3 sm:mb-4"></div>
+     <div id="todayStatusCards" class="grid grid-cols-5 gap-1.5 sm:gap-3 mb-3 sm:mb-6"></div>
+     <div id="todayRecapContent" class="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden"></div>
+    </main>
+   </div><!-- CALENDAR PAGE -->
+   <div id="calendarPage" class="page flex-col min-h-full w-full soft-navy-bg">
+    <header class="darker-header shadow-md px-3 sm:px-4 py-2 sm:py-4 sticky top-0 z-50">
+     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"><img src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w100" alt="Logo" class="w-7 h-7 sm:w-10 md:w-12 sm:h-10 md:h-12 object-contain logo-white flex-shrink-0" onerror="this.style.display='none'">
+       <h1 class="text-[10px] leading-tight sm:text-sm md:text-lg font-bold text-white uppercase tracking-wide sm:truncate">ABSEN ONLINE DAILY WORKER I.B.L.</h1>
+      </div>
+      <div class="flex items-center flex-shrink-0">
+       <div class="text-right">
+        <div id="calendarHeaderDate" class="text-[8px] sm:text-xs font-medium text-gray-300"></div>
+        <div class="flex items-center gap-0.5 sm:gap-1"><span id="calendarHeaderTime" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="calendarHeaderTz" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </header>
+    <div class="flex justify-end gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full"><button onclick="showPage('recapMenuPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+       <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+      </svg><span class="hidden xs:inline">Kembali</span> </button>
+    </div>
+    <main class="flex-1 p-3 sm:p-6 max-w-lg mx-auto w-full">
+     <h2 class="text-base sm:text-xl font-bold text-white text-center mb-3 sm:mb-4">Recap Berdasarkan Tanggal</h2>
+     <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-6">
+      <div class="flex items-center justify-between mb-3 sm:mb-6"><button onclick="changeMonth(-1)" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-all">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg></button>
+       <h2 id="calendarMonth" class="text-base sm:text-xl font-bold text-gray-800"></h2><button onclick="changeMonth(1)" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-all">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg></button>
+      </div>
+      <div class="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
+        Min
+       </div>
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
+        Sen
+       </div>
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
+        Sel
+       </div>
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
+        Rab
+       </div>
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
+        Kam
+       </div>
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
+        Jum
+       </div>
+       <div class="text-center text-[10px] sm:text-sm font-medium text-gray-500 py-1 sm:py-2">
+        Sab
+       </div>
+      </div>
+      <div id="calendarDays" class="grid grid-cols-7 gap-0.5 sm:gap-1"></div>
+     </div>
+    </main>
+   </div><!-- DATE RECAP PAGE -->
+   <div id="dateRecapPage" class="page flex-col min-h-full w-full soft-navy-bg">
+    <header class="darker-header shadow-md px-3 sm:px-4 py-2 sm:py-4 sticky top-0 z-50">
+     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"><img src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w100" alt="Logo" class="w-7 h-7 sm:w-10 md:w-12 sm:h-10 md:h-12 object-contain logo-white flex-shrink-0" onerror="this.style.display='none'">
+       <h1 class="text-[10px] leading-tight sm:text-sm md:text-lg font-bold text-white uppercase tracking-wide sm:truncate">ABSEN ONLINE DAILY WORKER I.B.L.</h1>
+      </div>
+      <div class="flex items-center flex-shrink-0">
+       <div class="text-right">
+        <div id="dateRecapHeaderDate" class="text-[8px] sm:text-xs font-medium text-gray-300"></div>
+        <div class="flex items-center gap-0.5 sm:gap-1"><span id="dateRecapHeaderTime" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="dateRecapHeaderTz" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </header>
+    <div class="flex justify-between gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full flex-wrap"><button id="refreshBtnDate" onclick="refreshDataFromSheet('date')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-cyan-500 text-white rounded-lg sm:rounded-xl hover:bg-cyan-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5 refresh-icon" fill="white" viewbox="0 0 24 24">
+       <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+      </svg><span class="hidden xs:inline">Refresh</span> </button>
+     <div class="flex gap-1.5 sm:gap-3"><button onclick="showPage('calendarPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+       </svg><span class="hidden xs:inline">Kembali</span> </button> <button onclick="showPage('absensiPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+       </svg><span class="hidden xs:inline">Home</span> </button>
+     </div>
+    </div>
+    <main class="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full">
+     <h2 class="text-base sm:text-xl font-bold text-white text-center mb-1 sm:mb-2">Recap Berdasarkan Tanggal</h2>
+     <div id="dateRecapTitle" class="text-center text-xs sm:text-lg font-semibold text-gray-300 mb-3 sm:mb-4"></div>
+     <div id="dateStatusCards" class="grid grid-cols-5 gap-1.5 sm:gap-3 mb-3 sm:mb-6"></div>
+     <div id="dateRecapContent" class="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden"></div>
+    </main>
+   </div><!-- PHOTO FOLDERS PAGE -->
+   <div id="photoFoldersPage" class="page flex-col min-h-full w-full soft-navy-bg">
+    <header class="darker-header shadow-md px-3 sm:px-4 py-2 sm:py-4 sticky top-0 z-50">
+     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"><img src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w100" alt="Logo" class="w-7 h-7 sm:w-10 md:w-12 sm:h-10 md:h-12 object-contain logo-white flex-shrink-0" onerror="this.style.display='none'">
+       <h1 class="text-[10px] leading-tight sm:text-sm md:text-lg font-bold text-white uppercase tracking-wide sm:truncate">ABSEN ONLINE DAILY WORKER I.B.L.</h1>
+      </div>
+      <div class="flex items-center flex-shrink-0">
+       <div class="text-right">
+        <div id="photoFoldersHeaderDate" class="text-[8px] sm:text-xs font-medium text-gray-300"></div>
+        <div class="flex items-center gap-0.5 sm:gap-1"><span id="photoFoldersHeaderTime" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="photoFoldersHeaderTz" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </header>
+    <div class="flex justify-end gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full"><button onclick="showPage('recapMenuPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+       <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+      </svg><span class="hidden xs:inline">Kembali</span> </button>
+    </div>
+    <main class="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full">
+     <h2 class="text-base sm:text-xl font-bold text-white text-center mb-3 sm:mb-4">Foto Absen</h2>
+     <div id="photoFoldersLoading" class="flex flex-col items-center justify-center py-8 sm:py-12">
+      <div class="loading-spinner mb-3 sm:mb-4"></div>
+      <p class="text-white font-medium text-sm sm:text-base">Memuat folder foto...</p>
+     </div>
+     <div id="photoFolders" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 hidden"></div>
+     <div id="noPhotosMessage" class="hidden text-center py-12 text-gray-300">
+      <svg class="w-16 h-16 mx-auto mb-4" fill="white" viewbox="0 0 24 24">
+       <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+      </svg>
+      <p>Belum ada foto absen</p>
+     </div>
+    </main>
+   </div><!-- PHOTO GALLERY PAGE -->
+   <div id="photoGalleryPage" class="page flex-col min-h-full w-full soft-navy-bg">
+    <header class="darker-header shadow-md px-3 sm:px-4 py-2 sm:py-4 sticky top-0 z-50">
+     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"><img src="https://drive.google.com/thumbnail?id=10un5eCNXYwHkgznim3T4lRMwICFWQ8Bw&amp;sz=w100" alt="Logo" class="w-7 h-7 sm:w-10 md:w-12 sm:h-10 md:h-12 object-contain logo-white flex-shrink-0" onerror="this.style.display='none'">
+       <h1 class="text-[10px] leading-tight sm:text-sm md:text-lg font-bold text-white uppercase tracking-wide sm:truncate">ABSEN ONLINE DAILY WORKER I.B.L.</h1>
+      </div>
+      <div class="flex items-center flex-shrink-0">
+       <div class="text-right">
+        <div id="galleryHeaderDate" class="text-[8px] sm:text-xs font-medium text-gray-300"></div>
+        <div class="flex items-center gap-0.5 sm:gap-1"><span id="galleryHeaderTime" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span> <span id="galleryHeaderTz" class="text-sm sm:text-xl md:text-2xl font-bold clock-time"></span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </header>
+    <div class="flex justify-end gap-2 p-3 sm:p-4 max-w-7xl mx-auto w-full"><button onclick="showPage('photoFoldersPage')" class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="white" viewbox="0 0 24 24">
+       <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+      </svg><span class="hidden xs:inline">Kembali</span> </button>
+    </div>
+    <main class="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full">
+     <h2 id="galleryTitle" class="text-base sm:text-xl font-bold text-white text-center mb-3 sm:mb-4">Foto Absen</h2>
+     <div id="photoGalleryLoading" class="flex flex-col items-center justify-center py-8 sm:py-12">
+      <div class="loading-spinner mb-3 sm:mb-4"></div>
+      <p class="text-white font-medium text-sm sm:text-base">Memuat foto...</p>
+     </div>
+     <div id="photoGallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+    </main>
+   </div><!-- STATUS CARD POPUP -->
+   <div id="statusCardPopup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-3 sm:p-4">
+    <div class="bg-white rounded-xl sm:rounded-2xl max-w-md w-full max-h-[85%] overflow-hidden shadow-2xl fade-in">
+     <div id="statusCardPopupHeader" class="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between bg-gray-500">
+      <h3 id="statusCardPopupTitle" class="text-base sm:text-xl font-bold text-white">Daftar Pekerja</h3><button onclick="closeStatusCardPopup()" class="text-white hover:bg-white hover:bg-opacity-20 p-1.5 sm:p-2 rounded-lg transition-all">
+       <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+       </svg></button>
+     </div>
+     <div id="statusCardPopupContent" class="p-4 sm:p-6 overflow-y-auto max-h-80 sm:max-h-96"></div>
+    </div>
+   </div><!-- PHOTO VIEWER POPUP -->
+   <div id="photoViewer" class="popup-overlay hidden"><button onclick="closePhotoViewer()" class="absolute top-4 right-4 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center z-10">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+     </svg></button> <button onclick="prevPhoto()" class="nav-btn prev">
+     <svg class="w-6 h-6" fill="white" viewbox="0 0 24 24">
+      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+     </svg></button> <img id="viewerImage" src="" alt="Photo" class="popup-image"> <button onclick="nextPhoto()" class="nav-btn next">
+     <svg class="w-6 h-6" fill="white" viewbox="0 0 24 24">
+      <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+     </svg></button>
+    <div id="photoViewerCounter" class="text-white mt-4 text-sm">
+     1 / 1
+    </div>
+   </div><!-- Toast -->
+   <div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl hidden z-50"><span id="toastMessage">Berhasil!</span>
+   </div>
+  </div>
+  <script>
+    // ==================== CONFIG & STATE ====================
+    const defaultConfig = {
+      app_title: 'ABSEN ONLINE DAILY WORKER I.B.L.',
+      company_name: 'ARCHIPELAGO DAILY WORKER'
+    };
+
+    let config = { ...defaultConfig };
+    let allAbsensiData = [];
+    let calendarDate = new Date();
+    let workers = [];
+    let workerStatus = {};
+    let capturedPhotos = [];
+    let currentViewerIndex = 0;
+    let currentViewerPhotos = [];
+    let currentLocation = null;
+    let locationAddress = 'Mendapatkan lokasi...';
+    let currentRecapDate = '';
+    let currentStatusCardDate = '';
+    
+    const SHEET_ID = '1FllBcwBjTr_jfPylhyWwHt6ZE16j6fJpSa0C9hYEw44';
+    const SHEET_NAME = 'Form responses 1';
+    const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    const RECAP_SHEET_NAME = 'Absen recap';
+    const RECAP_SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(RECAP_SHEET_NAME)}`;
+    const WATERMARK_LOGO_URL = 'https://lh3.googleusercontent.com/d/1zaavYZSem-yNHztE724qeIAWw9uGJgen=s200';
+    let GOOGLE_SCRIPT_URL = localStorage.getItem('googleScriptUrl') || 'https://script.google.com/macros/s/AKfycbzTjKB4lTiZKafD34Ts-NWEC-qq6RTAYudu_r4X8eijJSDCUzz1RvRY1a4S2XTENBHxjQ/exec';
+    let watermarkLogoLoaded = null;
+
+    // ==================== UTILITIES ====================
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.className = `fixed top-4 right-4 px-6 py-3 rounded-xl shadow-xl z-50 toast ${type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white`;
+      document.getElementById('toastMessage').textContent = message;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      if (pageId === 'calendarPage') renderCalendar();
+    }
+
+    function getUserIcon(size = 40) {
+      return `<svg width="${size}" height="${size}" fill="#1e3a5f" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+    }
+
+    function getWorkerPhotoHtml(worker, size = 60) {
+      if (worker.photo) {
+        return `<img src="${worker.photo}" alt="${worker.name}" class="worker-photo-img" style="width:${size}px;height:${size}px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div style="display:none;width:${size}px;height:${size}px;border-radius:12px;" class="flex items-center justify-center bg-gray-200">${getUserIcon(size * 0.6)}</div>`;
+      }
+      return `<div class="flex items-center justify-center bg-gray-200" style="width:${size}px;height:${size}px;border-radius:12px;">${getUserIcon(size * 0.6)}</div>`;
+    }
+
+    // ==================== CLOCK ====================
+    function updateClock() {
+      const now = new Date();
+      const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+      const dateStr = now.toLocaleDateString('id-ID', dateOptions);
+      const timeStr = now.toLocaleTimeString('id-ID', timeOptions);
+      const offset = now.getTimezoneOffset();
+      const tz = offset === -420 ? 'WIB' : offset === -480 ? 'WITA' : offset === -540 ? 'WIT' : 'WIB';
+      
+      // Update all clock elements across all pages
+      const clockElements = [
+        { date: 'currentDate', time: 'currentTime', tz: 'timezone' },
+        { date: 'recapMenuDate', time: 'recapMenuTime', tz: 'recapMenuTz' },
+        { date: 'todayRecapHeaderDate', time: 'todayRecapHeaderTime', tz: 'todayRecapHeaderTz' },
+        { date: 'calendarHeaderDate', time: 'calendarHeaderTime', tz: 'calendarHeaderTz' },
+        { date: 'dateRecapHeaderDate', time: 'dateRecapHeaderTime', tz: 'dateRecapHeaderTz' },
+        { date: 'photoFoldersHeaderDate', time: 'photoFoldersHeaderTime', tz: 'photoFoldersHeaderTz' },
+        { date: 'galleryHeaderDate', time: 'galleryHeaderTime', tz: 'galleryHeaderTz' }
+      ];
+      
+      clockElements.forEach(el => {
+        const dateEl = document.getElementById(el.date);
+        const timeEl = document.getElementById(el.time);
+        const tzEl = document.getElementById(el.tz);
+        if (dateEl) dateEl.textContent = dateStr;
+        if (timeEl) timeEl.textContent = timeStr;
+        if (tzEl) tzEl.textContent = tz;
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ==================== LOCATION ====================
+    function getCurrentLocation() {
+      if (!navigator.geolocation) {
+        locationAddress = 'Geolokasi tidak didukung';
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          currentLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLocation.lat}&lon=${currentLocation.lng}&zoom=18&addressdetails=1`);
+            const data = await response.json();
+            if (data && data.display_name) {
+              const parts = data.display_name.split(',').filter(p => !p.trim().toLowerCase().includes('indonesia'));
+              locationAddress = parts.join(',').trim();
+            } else {
+              locationAddress = `${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
+            }
+          } catch (error) {
+            locationAddress = `${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
+          }
+        },
+        (error) => {
+          locationAddress = 'Gagal mendapatkan lokasi';
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    // ==================== WATERMARK ====================
+    function preloadWatermarkLogo() {
+      return new Promise((resolve) => {
+        if (watermarkLogoLoaded) { resolve(watermarkLogoLoaded); return; }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { watermarkLogoLoaded = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.src = WATERMARK_LOGO_URL;
+        setTimeout(() => resolve(watermarkLogoLoaded), 2000);
+      });
+    }
+    preloadWatermarkLogo();
+
+    async function addWatermark(ctx, width, height, locationStr) {
+      const now = new Date();
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const dayName = days[now.getDay()];
+      const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const baseSize = Math.min(width, height);
+      const scale = baseSize / 1080;
+      const padding = 50 * scale;
+      const logoSize = 200 * scale;
+      const fontSize = 38 * scale;
+      const cornerRadius = 20 * scale;
+      
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 10 * scale;
+      ctx.shadowOffsetX = 3 * scale;
+      ctx.shadowOffsetY = 3 * scale;
+      
+      const startX = padding;
+      const bottomY = height - padding;
+      let locationY = bottomY;
+      const maxLocationWidth = width * 0.5;
+      
+      if (locationStr && locationStr !== 'Mendapatkan lokasi...' && !locationStr.includes('Gagal')) {
+        ctx.font = `${fontSize * 0.65}px Poppins, sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        const words = locationStr.split(' ');
+        let lines = [];
+        let currentLine = '📍 ';
+        words.forEach(word => {
+          const testLine = currentLine + word + ' ';
+          if (ctx.measureText(testLine).width > maxLocationWidth && currentLine !== '�� ') {
+            lines.push(currentLine.trim());
+            currentLine = '   ' + word + ' ';
+          } else {
+            currentLine = testLine;
+          }
+        });
+        lines.push(currentLine.trim());
+        const locLineHeight = fontSize * 0.85;
+        for (let i = lines.length - 1; i >= 0; i--) {
+          ctx.fillText(lines[i], startX, locationY);
+          locationY -= locLineHeight;
+        }
+        locationY -= 8 * scale;
+      }
+      
+      const row2Y = locationY;
+      ctx.font = `bold ${fontSize * 1.5}px Poppins, sans-serif`;
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText(timeStr, startX, row2Y);
+      
+      const timeWidth = ctx.measureText(timeStr).width;
+      const lineX = startX + timeWidth + fontSize * 0.5;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3 * scale;
+      ctx.beginPath();
+      ctx.moveTo(lineX, row2Y - fontSize * 1.2);
+      ctx.lineTo(lineX, row2Y + fontSize * 0.3);
+      ctx.stroke();
+      
+      const textStartX = lineX + fontSize * 0.5;
+      ctx.font = `bold ${fontSize * 0.85}px Poppins, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(dateStr, textStartX, row2Y - fontSize * 0.5);
+      ctx.font = `${fontSize * 0.75}px Poppins, sans-serif`;
+      ctx.fillText(dayName, textStartX, row2Y + fontSize * 0.2);
+      
+      const logoY = row2Y - fontSize * 1.5 - 12 * scale - logoSize;
+      const logoImg = await preloadWatermarkLogo();
+      if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(startX, logoY, logoSize, logoSize, cornerRadius);
+        ctx.clip();
+        ctx.drawImage(logoImg, startX, logoY, logoSize, logoSize);
+        ctx.restore();
+      }
+      
+      const rightPadding = padding;
+      const topY = padding + fontSize;
+      ctx.font = `bold ${fontSize * 1.2}px Poppins, sans-serif`;
+      const timeTextWidth = ctx.measureText('Time').width;
+      const markWidth = ctx.measureText('mark').width;
+      const rightX = width - rightPadding - timeTextWidth - markWidth;
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('Time', rightX, topY);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('mark', rightX + timeTextWidth, topY);
+      ctx.font = `${fontSize * 0.7}px Poppins, sans-serif`;
+      ctx.fillText('100% photo verified', rightX, topY + fontSize * 0.7);
+      
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+    }
+
+    // ==================== PHOTO UPLOAD ====================
+    async function handlePhotoUpload(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      for (const file of files) {
+        try {
+          const photo = await processPhotoWithWatermark(file);
+          capturedPhotos.push(photo);
+        } catch (e) {}
+      }
+      renderPhotoThumbnails();
+      event.target.value = '';
+    }
+
+    async function processPhotoWithWatermark(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const img = new Image();
+          img.onload = async () => {
+            const maxUploadSize = 800;
+            let uploadWidth = img.width, uploadHeight = img.height;
+            if (img.width > maxUploadSize || img.height > maxUploadSize) {
+              const ratio = Math.min(maxUploadSize / img.width, maxUploadSize / img.height);
+              uploadWidth = img.width * ratio;
+              uploadHeight = img.height * ratio;
+            }
+            
+            const uploadCanvas = document.createElement('canvas');
+            uploadCanvas.width = uploadWidth;
+            uploadCanvas.height = uploadHeight;
+            const uploadCtx = uploadCanvas.getContext('2d');
+            uploadCtx.drawImage(img, 0, 0, uploadWidth, uploadHeight);
+            await addWatermark(uploadCtx, uploadWidth, uploadHeight, locationAddress);
+            const uploadData = uploadCanvas.toDataURL('image/jpeg', 0.7);
+            
+            const fullCanvas = document.createElement('canvas');
+            fullCanvas.width = img.width;
+            fullCanvas.height = img.height;
+            const fullCtx = fullCanvas.getContext('2d');
+            fullCtx.drawImage(img, 0, 0);
+            await addWatermark(fullCtx, img.width, img.height, locationAddress);
+            const fullData = fullCanvas.toDataURL('image/jpeg', 0.92);
+            
+            const thumbCanvas = document.createElement('canvas');
+            const thumbRatio = Math.min(200 / img.width, 200 / img.height);
+            thumbCanvas.width = img.width * thumbRatio;
+            thumbCanvas.height = img.height * thumbRatio;
+            const thumbCtx = thumbCanvas.getContext('2d');
+            thumbCtx.drawImage(fullCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+            
+            resolve({
+              thumbnail: thumbCanvas.toDataURL('image/jpeg', 0.5),
+              uploadData: uploadData,
+              fullData: fullData,
+              timestamp: new Date()
+            });
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderPhotoThumbnails() {
+      const container = document.getElementById('photoThumbnails');
+      const countEl = document.getElementById('photoCount');
+      if (capturedPhotos.length === 0) {
+        container.classList.add('hidden');
+        countEl.classList.add('hidden');
+        return;
+      }
+      container.classList.remove('hidden');
+      countEl.classList.remove('hidden');
+      countEl.textContent = `${capturedPhotos.length} foto dipilih`;
+      container.innerHTML = capturedPhotos.map((photo, index) => `
+        <div class="relative">
+          <img src="${photo.thumbnail}" class="photo-thumbnail" onclick="openPhotoViewer(${index}, 'captured')">
+          <button onclick="removePhoto(${index})" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs hover:bg-red-600">×</button>
+        </div>
+      `).join('');
+    }
+
+    function removePhoto(index) {
+      capturedPhotos.splice(index, 1);
+      renderPhotoThumbnails();
+    }
+
+    // ==================== PHOTO VIEWER ====================
+    function openPhotoViewer(index, source) {
+      if (source === 'captured') {
+        currentViewerPhotos = capturedPhotos.map(p => p.fullData);
+      } else {
+        currentViewerPhotos = source;
+      }
+      currentViewerIndex = index;
+      updatePhotoViewer();
+      document.getElementById('photoViewer').classList.remove('hidden');
+    }
+
+    function updatePhotoViewer() {
+      document.getElementById('viewerImage').src = currentViewerPhotos[currentViewerIndex];
+      document.getElementById('photoViewerCounter').textContent = `${currentViewerIndex + 1} / ${currentViewerPhotos.length}`;
+    }
+
+    function prevPhoto() {
+      if (currentViewerIndex > 0) { currentViewerIndex--; updatePhotoViewer(); }
+    }
+
+    function nextPhoto() {
+      if (currentViewerIndex < currentViewerPhotos.length - 1) { currentViewerIndex++; updatePhotoViewer(); }
+    }
+
+    function closePhotoViewer() {
+      document.getElementById('photoViewer').classList.add('hidden');
+    }
+
+    // ==================== WORKERS ====================
+    function convertDriveUrl(url) {
+      if (!url) return '';
+      let match = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+      if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200`;
+      match = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200`;
+      return url;
+    }
+
+    async function fetchWorkersFromSheet() {
+      try {
+        const response = await fetch(SHEETS_URL);
+        const text = await response.text();
+        const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?$/);
+        if (!jsonMatch) throw new Error('Parse error');
+        const data = JSON.parse(jsonMatch[1]);
+        const rows = data.table.rows;
+        workers = [];
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          if (row.c && row.c[1] && row.c[1].v) {
+            workers.push({
+              id: i + 1,
+              name: row.c[1].v,
+              photo: row.c[2] && row.c[2].v ? convertDriveUrl(row.c[2].v) : ''
+            });
+          }
+        }
+        workers.forEach(w => workerStatus[w.id] = null);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function updateStatusCounter() {
+      const selectedCount = Object.values(workerStatus).filter(s => s !== null).length;
+      document.getElementById('selectedCount').textContent = selectedCount;
+      document.getElementById('unselectedCount').textContent = workers.length - selectedCount;
+    }
+
+    function renderWorkerGrid(filteredWorkers = workers) {
+      const grid = document.getElementById('workerGrid');
+      document.getElementById('loadingWorkers').classList.add('hidden');
+      grid.classList.remove('hidden');
+      grid.innerHTML = '';
+      updateStatusCounter();
+      
+      if (filteredWorkers.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-white"><p>Tidak ada data pekerja</p></div>`;
+        return;
+      }
+      
+      filteredWorkers.forEach(worker => {
+        const status = workerStatus[worker.id];
+        const isSelected = status !== null;
+        const getStatusBtnClass = (btnStatus, color) => {
+          const isActive = status === btnStatus;
+          return `status-btn px-2 py-1 ${color} text-white rounded-lg text-xs ${isActive ? 'selected font-bold' : 'font-medium'} hover:opacity-80`;
+        };
+        
+        const card = document.createElement('div');
+        card.className = `worker-card bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg transition-all cursor-pointer ${isSelected ? 'selected' : ''}`;
+        card.innerHTML = `
+          <div class="text-center mb-2 sm:mb-3">
+            <div class="mb-1.5 sm:mb-2 flex justify-center">${getWorkerPhotoHtml(worker, 50)}</div>
+            <h3 class="worker-name font-semibold text-gray-800 text-xs sm:text-sm leading-tight line-clamp-2">${worker.name}</h3>
+            <p class="status-text text-[10px] sm:text-xs mt-0.5 sm:mt-1 ${status ? 'text-gray-600' : 'text-gray-400'}">${status || 'Belum dipilih'}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-0.5 sm:gap-1">
+            <button onclick="event.stopPropagation(); toggleStatus(${worker.id}, 'Start Work')" class="${getStatusBtnClass('Start Work', 'bg-green-500')} whitespace-nowrap text-[8px] sm:text-[10px] py-1 sm:py-1.5">Start</button>
+            <button onclick="event.stopPropagation(); toggleStatus(${worker.id}, 'Finish Work')" class="${getStatusBtnClass('Finish Work', 'bg-blue-500')} whitespace-nowrap text-[8px] sm:text-[10px] py-1 sm:py-1.5">Finish</button>
+            <button onclick="event.stopPropagation(); toggleStatus(${worker.id}, 'Sakit')" class="${getStatusBtnClass('Sakit', 'bg-orange-500')} text-[8px] sm:text-[10px] py-1 sm:py-1.5">Sakit</button>
+            <button onclick="event.stopPropagation(); toggleStatus(${worker.id}, 'Standby')" class="${getStatusBtnClass('Standby', 'bg-purple-500')} text-[8px] sm:text-[10px] py-1 sm:py-1.5">Standby</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleStatus(workerId, status) {
+      workerStatus[workerId] = workerStatus[workerId] === status ? null : status;
+      renderWorkerGrid();
+    }
+
+    function setAllPresent() {
+      workers.forEach(w => workerStatus[w.id] = 'Start Work');
+      renderWorkerGrid();
+      showToast('Semua pekerja ditandai hadir!');
+    }
+
+    function resetAllStatus() {
+      workers.forEach(w => workerStatus[w.id] = null);
+      renderWorkerGrid();
+      showToast('Status absen direset!');
+    }
+
+    function resetAllStatusSilent() {
+      workers.forEach(w => workerStatus[w.id] = null);
+      renderWorkerGrid();
+    }
+
+    // ==================== SEARCH ====================
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      const query = e.target.value.toLowerCase().trim();
+      if (query === '') {
+        document.getElementById('searchResults').classList.add('hidden');
+        document.getElementById('workerGrid').classList.remove('hidden');
+        return;
+      }
+      const filtered = workers.filter(w => w.name.toLowerCase().includes(query));
+      if (filtered.length > 0) {
+        document.getElementById('workerGrid').classList.add('hidden');
+        document.getElementById('searchResults').classList.remove('hidden');
+        renderSearchResults(filtered);
+      } else {
+        document.getElementById('searchResults').classList.add('hidden');
+        document.getElementById('workerGrid').classList.remove('hidden');
+      }
+    });
+
+    function renderSearchResults(filteredWorkers) {
+      const container = document.getElementById('searchResultsGrid');
+      container.innerHTML = '';
+      filteredWorkers.forEach(worker => {
+        const status = workerStatus[worker.id];
+        const isSelected = status !== null;
+        const getStatusBtnClass = (btnStatus, color) => {
+          const isActive = status === btnStatus;
+          return `status-btn px-2 py-1 ${color} text-white rounded-lg text-xs ${isActive ? 'selected font-bold' : 'font-medium'} hover:opacity-80`;
+        };
+        const card = document.createElement('div');
+        card.className = `worker-card bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-lg transition-all cursor-pointer fade-in ${isSelected ? 'selected' : ''}`;
+        card.innerHTML = `
+          <div class="text-center mb-2 sm:mb-3">
+            <div class="mb-1.5 sm:mb-2 flex justify-center">${getWorkerPhotoHtml(worker, 50)}</div>
+            <h3 class="worker-name font-semibold text-gray-800 text-xs sm:text-sm leading-tight line-clamp-2">${worker.name}</h3>
+            <p class="status-text text-[10px] sm:text-xs mt-0.5 sm:mt-1 ${status ? 'text-gray-600' : 'text-gray-400'}">${status || 'Belum dipilih'}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-0.5 sm:gap-1">
+            <button onclick="event.stopPropagation(); setStatus(${worker.id}, 'Start Work')" class="${getStatusBtnClass('Start Work', 'bg-green-500')} whitespace-nowrap text-[8px] sm:text-[10px] py-1 sm:py-1.5">Start</button>
+            <button onclick="event.stopPropagation(); setStatus(${worker.id}, 'Finish Work')" class="${getStatusBtnClass('Finish Work', 'bg-blue-500')} whitespace-nowrap text-[8px] sm:text-[10px] py-1 sm:py-1.5">Finish</button>
+            <button onclick="event.stopPropagation(); setStatus(${worker.id}, 'Sakit')" class="${getStatusBtnClass('Sakit', 'bg-orange-500')} text-[8px] sm:text-[10px] py-1 sm:py-1.5">Sakit</button>
+            <button onclick="event.stopPropagation(); setStatus(${worker.id}, 'Standby')" class="${getStatusBtnClass('Standby', 'bg-purple-500')} text-[8px] sm:text-[10px] py-1 sm:py-1.5">Standby</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function setStatus(workerId, status) {
+      workerStatus[workerId] = workerStatus[workerId] === status ? null : status;
+      setTimeout(() => {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').classList.add('hidden');
+        document.getElementById('workerGrid').classList.remove('hidden');
+        renderWorkerGrid();
+      }, 500);
+    }
+
+    // ==================== DEVICE & PHOTO SAVE ====================
+    function isIOSDevice() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    function base64ToBlob(base64Data, contentType = 'image/jpeg') {
+      const byteString = atob(base64Data.split(',')[1]);
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < byteString.length; i++) {
+        uint8Array[i] = byteString.charCodeAt(i);
+      }
+      return new Blob([uint8Array], { type: contentType });
+    }
+
+    function forceDownloadPhoto(photoData, fileName) {
+      const blob = base64ToBlob(photoData);
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.cssText = 'position:absolute;left:-9999px;visibility:hidden;';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(blobUrl); }, 500);
+    }
+
+    async function sharePhotoIOS(photoData, fileName) {
+      try {
+        const blob = base64ToBlob(photoData);
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        
+        // Cek apakah Web Share API tersedia dan mendukung file sharing
+        if (navigator.share && navigator.canShare) {
+          const shareData = { files: [file] };
+          
+          if (navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            return { success: true, method: 'share' };
+          }
+        }
+        
+        // Fallback: buka gambar di tab baru untuk long-press save
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+        return { success: true, method: 'newtab' };
+        
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return { success: true, method: 'cancelled' };
+        }
+        // Fallback terakhir
+        forceDownloadPhoto(photoData, fileName);
+        return { success: true, method: 'download' };
+      }
+    }
+
+    // Fungsi khusus untuk share multiple photos di iOS
+    async function shareMultiplePhotosIOS(photos, baseFileName) {
+      try {
+        // Buat array File dari semua foto
+        const files = photos.map((photo, index) => {
+          const blob = base64ToBlob(photo.fullData);
+          const fileName = photos.length === 1 
+            ? `${baseFileName}.jpg` 
+            : `${baseFileName}_${index + 1}.jpg`;
+          return new File([blob], fileName, { type: 'image/jpeg' });
+        });
+
+        // Cek apakah bisa share multiple files
+        if (navigator.share && navigator.canShare) {
+          const shareData = { files: files };
+          
+          if (navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            return { success: true, count: files.length };
+          }
+        }
+
+        // Fallback: share satu per satu
+        for (let i = 0; i < photos.length; i++) {
+          const fileName = photos.length === 1 
+            ? `${baseFileName}.jpg` 
+            : `${baseFileName}_${i + 1}.jpg`;
+          await sharePhotoIOS(photos[i].fullData, fileName);
+          
+          // Delay antar foto
+          if (i < photos.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+        }
+        return { success: true, count: photos.length };
+        
+      } catch (error) {
+        console.log('Share error:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    async function savePhotosToDevice(photos, baseFileName) {
+      if (photos.length === 0) return;
+      const isIOS = isIOSDevice();
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        const fileName = photos.length === 1 ? `${baseFileName}.jpg` : `${baseFileName}_${i + 1}.jpg`;
+        if (isIOS) {
+          await sharePhotoIOS(photo.fullData, fileName);
+          if (i < photos.length - 1) await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+          forceDownloadPhoto(photo.fullData, fileName);
+          if (i < photos.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+    }
+
+    // ==================== SUBMIT ====================
+    async function submitAbsensi() {
+      const submitBtn = document.getElementById('submitBtn');
+      const now = new Date();
+      const monthsId = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      const tanggalFormatted = `${now.getDate()} ${monthsId[now.getMonth()]} ${now.getFullYear()}`;
+      const jamFormatted = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const attendanceData = workers.map((worker, index) => ({
+        row: index + 3,
+        status: workerStatus[worker.id] || 'Belum Absen'
+      }));
+      
+      const photosToProcess = [...capturedPhotos];
+      const baseFileName = `Absen_${tanggalFormatted.replace(/ /g, '_')}_${jamFormatted.replace(':', '-')}`;
+      const isIOS = isIOSDevice();
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<div class="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full"></div> Mengirim data...';
+      
+      // STEP 1: Upload data absensi dan foto ke server
+      const uploadPromises = [];
+      
+      if (GOOGLE_SCRIPT_URL && photosToProcess.length > 0) {
+        photosToProcess.forEach((photo, i) => {
+          uploadPromises.push(uploadPhotoToDriveFast(photo.uploadData, photo.timestamp, i));
+        });
+      }
+      
+      if (GOOGLE_SCRIPT_URL) {
+        uploadPromises.push(
+          fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'submitAttendance',
+              tanggal: tanggalFormatted,
+              jam: jamFormatted,
+              workers: workers.map(w => w.name),
+              attendance: attendanceData
+            })
+          })
+        );
+      }
+      
+      if (uploadPromises.length > 0) await Promise.all(uploadPromises);
+      
+      // STEP 2: Reset form
+      resetAllStatusSilent();
+      capturedPhotos = [];
+      renderPhotoThumbnails();
+      
+      // STEP 3: Tampilkan pesan sukses
+      showToast('✅ Data absensi berhasil dikirim!');
+      
+      // STEP 4: Jika ada foto, buka share sheet (khusus iPhone) atau download (Android/Desktop)
+      if (photosToProcess.length > 0) {
+        if (isIOS) {
+          // Update button untuk proses share
+          submitBtn.innerHTML = '<div class="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full"></div> Menyiapkan foto...';
+          
+          // Delay sedikit agar toast terlihat dulu
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Buka share sheet iOS untuk semua foto sekaligus
+          const shareResult = await shareMultiplePhotosIOS(photosToProcess, baseFileName);
+          
+          if (shareResult.success) {
+            showToast(`📸 ${photosToProcess.length} foto siap disimpan!`);
+          }
+        } else {
+          // Android/Desktop: langsung download
+          submitBtn.innerHTML = '<div class="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full"></div> Menyimpan foto...';
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          for (let i = 0; i < photosToProcess.length; i++) {
+            const photo = photosToProcess[i];
+            const fileName = photosToProcess.length === 1 
+              ? `${baseFileName}.jpg` 
+              : `${baseFileName}_${i + 1}.jpg`;
+            forceDownloadPhoto(photo.fullData, fileName);
+            
+            if (i < photosToProcess.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+          }
+          showToast(`📸 ${photosToProcess.length} foto berhasil didownload!`);
+        }
+      }
+      
+      // Reset button
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<svg class="w-6 h-6 transform -rotate-45" fill="white" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Kirim Absensi';
+    }
+
+    async function uploadPhotoToDriveFast(photoData, timestamp, index = 0) {
+      if (!GOOGLE_SCRIPT_URL) return { success: false };
+      const now = timestamp || new Date();
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const folderName = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      const fileName = `Absen_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}_${index}.jpg`;
+      
+      return new Promise((resolve) => {
+        const timeoutId = setTimeout(() => resolve({ success: true }), 3000);
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'uploadPhoto', folderName, fileName, photoData })
+        }).then(() => { clearTimeout(timeoutId); resolve({ success: true }); })
+          .catch(() => { clearTimeout(timeoutId); resolve({ success: true }); });
+      });
+    }
+
+    // ==================== RECAP ====================
+    async function fetchRecapDataFromSheet() {
+      try {
+        const response = await fetch(RECAP_SHEETS_URL);
+        const text = await response.text();
+        const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?$/);
+        if (!jsonMatch) return [];
+        const data = JSON.parse(jsonMatch[1]);
+        const rows = data.table.rows;
+        const cols = data.table.cols;
+        if (!rows || rows.length < 3) return [];
+        
+        const result = [];
+        const tanggalRow = rows[0];
+        const jamRow = rows[1];
+        const numCols = cols.length;
+        
+        for (let col = 1; col < numCols; col++) {
+          const tanggalCell = tanggalRow.c && tanggalRow.c[col];
+          const jamCell = jamRow.c && jamRow.c[col];
+          let tanggal = tanggalCell ? (tanggalCell.v || tanggalCell.f || '') : '';
+          let jam = jamCell ? (jamCell.v || jamCell.f || '') : '';
+          if (!tanggal) continue;
+          const displayDate = String(tanggal);
+          const dateForComparison = convertToIdLocaleDate(displayDate);
+          
+          for (let row = 2; row < rows.length; row++) {
+            const workerRow = rows[row];
+            if (!workerRow.c) continue;
+            const workerNameCell = workerRow.c[0];
+            const statusCell = workerRow.c[col];
+            const workerName = workerNameCell ? (workerNameCell.v || workerNameCell.f || '') : '';
+            const status = statusCell ? (statusCell.v || statusCell.f || '') : '';
+            if (workerName && status) {
+              result.push({
+                type: 'attendance',
+                date: dateForComparison,
+                date_display: displayDate,
+                time: String(jam),
+                worker_name: String(workerName),
+                status: String(status)
+              });
+            }
+          }
+        }
+        return result;
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function convertToIdLocaleDate(dateStr) {
+      if (!dateStr) return '';
+      const str = String(dateStr).trim();
+      const monthMapId = { 'januari': 0, 'februari': 1, 'maret': 2, 'april': 3, 'mei': 4, 'juni': 5, 'juli': 6, 'agustus': 7, 'september': 8, 'oktober': 9, 'november': 10, 'desember': 11 };
+      const monthMapEn = { 'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5, 'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11 };
+      const match = str.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+      if (match) {
+        const day = parseInt(match[1]);
+        const monthName = match[2].toLowerCase();
+        const year = parseInt(match[3]);
+        let monthIndex = monthMapId[monthName] ?? monthMapEn[monthName] ?? -1;
+        if (monthIndex >= 0) {
+          const date = new Date(year, monthIndex, day);
+          return date.toLocaleDateString('id-ID');
+        }
+      }
+      return str;
+    }
+
+    async function showTodayRecap() {
+      const today = new Date().toLocaleDateString('id-ID');
+      currentRecapDate = today;
+      currentStatusCardDate = today;
+      document.getElementById('todayRecapDate').textContent = today;
+      showPage('todayRecapPage');
+      
+      document.getElementById('todayRecapContent').innerHTML = `<div class="p-8 flex flex-col items-center justify-center"><div class="loading-spinner mb-4"></div><p class="text-gray-600">Memuat data...</p></div>`;
+      document.getElementById('todayStatusCards').innerHTML = '';
+      
+      const freshData = await fetchRecapDataFromSheet();
+      allAbsensiData = freshData;
+      const todayData = allAbsensiData.filter(d => d.date === today && d.type === 'attendance');
+      renderStatusCards('todayStatusCards', today, allAbsensiData);
+      renderRecapTable(todayData, 'todayRecapContent');
+    }
+
+    async function showDateRecap(dateStr) {
+      currentRecapDate = dateStr;
+      currentStatusCardDate = dateStr;
+      document.getElementById('dateRecapTitle').textContent = dateStr;
+      showPage('dateRecapPage');
+      
+      document.getElementById('dateRecapContent').innerHTML = `<div class="p-8 flex flex-col items-center justify-center"><div class="loading-spinner mb-4"></div><p class="text-gray-600">Memuat data...</p></div>`;
+      document.getElementById('dateStatusCards').innerHTML = '';
+      
+      const freshData = await fetchRecapDataFromSheet();
+      allAbsensiData = freshData;
+      renderStatusCards('dateStatusCards', dateStr, allAbsensiData);
+      const dateData = allAbsensiData.filter(d => d.date === dateStr && d.type === 'attendance');
+      renderRecapTable(dateData, 'dateRecapContent');
+    }
+
+    function renderRecapTable(data, containerId) {
+      const container = document.getElementById(containerId);
+      if (data.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-gray-500"><p>Tidak ada data absensi untuk tanggal ini</p></div>';
+        return;
+      }
+      
+      const statusBgColors = { 'Start Work': '#22c55e', 'Finish Work': '#3b82f6', 'Sakit': '#f97316', 'Standby': '#a855f7', 'Belum Absen': '#ef4444' };
+      const timeGroups = {};
+      data.forEach(item => {
+        if (!timeGroups[item.time]) timeGroups[item.time] = {};
+        timeGroups[item.time][item.worker_name] = item.status;
+      });
+      
+      const times = Object.keys(timeGroups).sort((a, b) => {
+        const parseTime = (t) => { if (!t) return 0; const parts = t.split(':'); return parseInt(parts[0] || 0) * 60 + parseInt(parts[1] || 0); };
+        return parseTime(a) - parseTime(b);
+      });
+      
+      const workerNamesInData = [...new Set(data.map(d => d.worker_name))];
+      let html = `<div class="overflow-x-auto"><table class="w-full border-collapse text-[10px] sm:text-sm"><tbody>`;
+      html += `<tr><td class="border border-gray-300 px-1.5 py-1.5 sm:px-4 sm:py-3 bg-gray-100 font-bold text-gray-700">Jam</td>`;
+      times.forEach(time => { html += `<td class="border border-gray-300 px-1 py-1.5 sm:px-4 sm:py-3 bg-white text-center font-medium">${time}</td>`; });
+      html += `</tr>`;
+      
+      workerNamesInData.forEach(workerName => {
+        const workerInfo = workers.find(w => w.name === workerName);
+        const photo = workerInfo ? workerInfo.photo : '';
+        html += `<tr><td class="border border-gray-300 px-1.5 py-1.5 sm:px-4 sm:py-3 bg-gray-50"><div class="flex items-center gap-1 sm:gap-2">`;
+        html += photo ? `<img src="${photo}" class="w-5 h-5 sm:w-8 sm:h-8 rounded-md sm:rounded-lg object-cover flex-shrink-0" onerror="this.style.display='none'">` : `<div class="w-5 h-5 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-200 rounded-md sm:rounded-lg flex-shrink-0">${getUserIcon(14)}</div>`;
+        html += `<span class="font-medium text-gray-800 text-[9px] sm:text-sm leading-tight">${workerName}</span></div></td>`;
+        times.forEach(time => {
+          const status = timeGroups[time][workerName] || 'Belum Absen';
+          const bgColor = statusBgColors[status];
+          const shortStatus = status === 'Start Work' ? 'Start' : status === 'Finish Work' ? 'Finish' : status === 'Belum Absen' ? 'Belum' : status;
+          html += `<td class="border border-gray-300 px-0.5 py-1 sm:px-3 sm:py-2 text-center" style="background-color: ${bgColor};"><span class="text-white font-medium text-[8px] sm:text-sm">${shortStatus}</span></td>`;
+        });
+        html += `</tr>`;
+      });
+      html += `</tbody></table></div>`;
+      container.innerHTML = html;
+    }
+
+    function generateStatusCardsHTML(dateStr, dataSource = null) {
+      let sourceData = dataSource || allAbsensiData;
+      const dateData = sourceData.filter(d => d.date === dateStr && d.type === 'attendance');
+      const workerStatusMap = {};
+      dateData.forEach(d => {
+        if (!workerStatusMap[d.worker_name]) workerStatusMap[d.worker_name] = new Set();
+        workerStatusMap[d.worker_name].add(d.status);
+      });
+      
+      let startWork = 0, finishWork = 0, sakit = 0, standby = 0;
+      Object.values(workerStatusMap).forEach(statuses => {
+        if (statuses.has('Start Work')) startWork++;
+        if (statuses.has('Finish Work')) finishWork++;
+        if (statuses.has('Sakit')) sakit++;
+        if (statuses.has('Standby')) standby++;
+      });
+      
+      const workersWithStatus = new Set();
+      Object.entries(workerStatusMap).forEach(([name, statuses]) => {
+        if ([...statuses].some(s => s !== 'Belum Absen')) workersWithStatus.add(name);
+      });
+      
+      const totalWorkers = workers.length || Object.keys(workerStatusMap).length;
+      const belumAbsen = Math.max(0, totalWorkers - workersWithStatus.size);
+      
+      return `
+        <div class="bg-green-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-[7px] sm:text-sm mb-0.5 sm:mb-2 truncate">Start</div><div class="text-base sm:text-5xl font-bold">${startWork}</div><div class="text-[6px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">/ ${totalWorkers}</div></div>
+        <div class="bg-blue-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-[7px] sm:text-sm mb-0.5 sm:mb-2 truncate">Finish</div><div class="text-base sm:text-5xl font-bold">${finishWork}</div><div class="text-[6px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">/ ${totalWorkers}</div></div>
+        <div onclick="showStatusCardPopup('Sakit')" class="bg-orange-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center status-card-clickable"><div class="font-semibold text-[7px] sm:text-sm mb-0.5 sm:mb-2">Sakit</div><div class="text-base sm:text-5xl font-bold">${sakit}</div><div class="text-[6px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">/ ${totalWorkers}</div></div>
+        <div onclick="showStatusCardPopup('Standby')" class="bg-purple-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center status-card-clickable"><div class="font-semibold text-[7px] sm:text-sm mb-0.5 sm:mb-2">Standby</div><div class="text-base sm:text-5xl font-bold">${standby}</div><div class="text-[6px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">/ ${totalWorkers}</div></div>
+        <div class="bg-red-500 rounded-lg sm:rounded-xl p-1.5 sm:p-4 text-white shadow-lg text-center"><div class="font-semibold text-[7px] sm:text-sm mb-0.5 sm:mb-2 truncate">Belum</div><div class="text-base sm:text-5xl font-bold">${belumAbsen}</div><div class="text-[6px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">/ ${totalWorkers}</div></div>
+      `;
+    }
+
+    function renderStatusCards(containerId, dateStr, dataSource = null) {
+      const container = document.getElementById(containerId);
+      if (container) container.innerHTML = generateStatusCardsHTML(dateStr, dataSource);
+    }
+
+    function getWorkersByStatus(statusType, dateStr, dataSource = null) {
+      let sourceData = dataSource || allAbsensiData;
+      const dateData = sourceData.filter(d => d.date === dateStr && d.type === 'attendance');
+      const workerStatusMap = {};
+      dateData.forEach(d => {
+        if (!workerStatusMap[d.worker_name]) workerStatusMap[d.worker_name] = new Set();
+        workerStatusMap[d.worker_name].add(d.status);
+      });
+      
+      const result = [];
+      if (statusType === 'Belum Absen') {
+        const workersWithStatus = new Set();
+        Object.entries(workerStatusMap).forEach(([name, statuses]) => {
+          if ([...statuses].some(s => s !== 'Belum Absen')) workersWithStatus.add(name);
+        });
+        workers.forEach(w => { if (!workersWithStatus.has(w.name)) result.push(w); });
+      } else {
+        Object.entries(workerStatusMap).forEach(([name, statuses]) => {
+          if (statuses.has(statusType)) {
+            const workerInfo = workers.find(w => w.name === name);
+            result.push(workerInfo || { name, photo: '' });
+          }
+        });
+      }
+      return result;
+    }
+
+    function showStatusCardPopup(statusType) {
+      const popup = document.getElementById('statusCardPopup');
+      const header = document.getElementById('statusCardPopupHeader');
+      const title = document.getElementById('statusCardPopupTitle');
+      const content = document.getElementById('statusCardPopupContent');
+      
+      const statusColors = { 'Start Work': 'bg-green-500', 'Finish Work': 'bg-blue-500', 'Sakit': 'bg-orange-500', 'Standby': 'bg-purple-500', 'Belum Absen': 'bg-red-500' };
+      header.className = `px-6 py-4 flex items-center justify-between ${statusColors[statusType] || 'bg-gray-500'}`;
+      title.textContent = `Daftar Pekerja - ${statusType}`;
+      
+      const workersList = getWorkersByStatus(statusType, currentStatusCardDate);
+      if (workersList.length === 0) {
+        content.innerHTML = `<div class="text-center py-8 text-gray-500"><svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p>Tidak ada pekerja dengan status ini</p></div>`;
+      } else {
+        content.innerHTML = `<div class="space-y-2 sm:space-y-3">${workersList.map((worker, index) => `
+          <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl fade-in" style="animation-delay: ${index * 0.05}s">
+            <div class="flex-shrink-0">${worker.photo ? `<img src="${worker.photo}" alt="${worker.name}" class="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div style="display:none;width:36px;height:36px;border-radius:8px;" class="flex items-center justify-center bg-gray-200">${getUserIcon(20)}</div>` : `<div class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-gray-200 rounded-lg sm:rounded-xl">${getUserIcon(20)}</div>`}</div>
+            <div class="flex-1 min-w-0"><h4 class="font-semibold text-gray-800 text-xs sm:text-base truncate">${worker.name}</h4></div>
+            <div class="flex-shrink-0"><span class="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-white rounded-full ${statusColors[statusType]}">${statusType}</span></div>
+          </div>
+        `).join('')}</div><div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t text-center text-xs sm:text-sm text-gray-500">Total: <span class="font-bold">${workersList.length}</span> pekerja</div>`;
+      }
+      popup.classList.remove('hidden');
+    }
+
+    function closeStatusCardPopup() {
+      document.getElementById('statusCardPopup').classList.add('hidden');
+    }
+
+    async function refreshDataFromSheet(page) {
+      const btnId = page === 'today' ? 'refreshBtnToday' : 'refreshBtnDate';
+      const btn = document.getElementById(btnId);
+      btn.classList.add('btn-loading');
+      btn.innerHTML = `<svg class="w-5 h-5 refresh-icon spinning" fill="white" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> Memuat...`;
+      
+      try {
+        const freshData = await fetchRecapDataFromSheet();
+        allAbsensiData = freshData;
+        if (page === 'today') {
+          const today = new Date().toLocaleDateString('id-ID');
+          currentStatusCardDate = today;
+          renderStatusCards('todayStatusCards', today, allAbsensiData);
+          renderRecapTable(allAbsensiData.filter(d => d.date === today && d.type === 'attendance'), 'todayRecapContent');
+        } else {
+          currentStatusCardDate = currentRecapDate;
+          renderStatusCards('dateStatusCards', currentRecapDate, allAbsensiData);
+          renderRecapTable(allAbsensiData.filter(d => d.date === currentRecapDate && d.type === 'attendance'), 'dateRecapContent');
+        }
+        showToast(`Data berhasil diperbarui!`);
+      } catch (error) {
+        showToast('Gagal memperbarui data!', 'error');
+      }
+      
+      btn.classList.remove('btn-loading');
+      btn.innerHTML = `<svg class="w-5 h-5 refresh-icon" fill="white" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> Refresh Data`;
+    }
+
+    // ==================== CALENDAR ====================
+    function renderCalendar() {
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth();
+      const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+      
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const datesWithData = new Set(allAbsensiData.filter(d => d.type === 'attendance').map(d => d.date));
+      
+      const container = document.getElementById('calendarDays');
+      container.innerHTML = '';
+      for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = new Date(year, month, day).toLocaleDateString('id-ID');
+        const hasData = datesWithData.has(dateStr);
+        const dayEl = document.createElement('button');
+        dayEl.className = `calendar-day p-2 text-center rounded-lg transition-all ${hasData ? 'has-data' : 'hover:bg-gray-100'}`;
+        dayEl.textContent = day;
+        dayEl.onclick = () => showDateRecap(dateStr);
+        container.appendChild(dayEl);
+      }
+    }
+
+    function changeMonth(delta) {
+      calendarDate.setMonth(calendarDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    // ==================== PHOTO RECAP ====================
+    let cachedFolders = null;
+    let cachedPhotos = {};
+
+    async function showPhotoRecap() {
+      showPage('photoFoldersPage');
+      if (cachedFolders && cachedFolders.length > 0) {
+        document.getElementById('photoFoldersLoading').classList.add('hidden');
+        renderPhotoFolders(cachedFolders);
+        fetchPhotoFolders().then(folders => { if (folders && folders.length > 0) { cachedFolders = folders; renderPhotoFolders(folders); } });
+        return;
+      }
+      document.getElementById('photoFolders').classList.add('hidden');
+      document.getElementById('noPhotosMessage').classList.add('hidden');
+      document.getElementById('photoFoldersLoading').classList.remove('hidden');
+      const folders = await fetchPhotoFolders();
+      cachedFolders = folders;
+      renderPhotoFolders(folders);
+    }
+
+    async function fetchPhotoFolders() {
+      if (!GOOGLE_SCRIPT_URL) return [];
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getFolders`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        return data.success ? data.folders : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function renderPhotoFolders(folders) {
+      document.getElementById('photoFoldersLoading').classList.add('hidden');
+      if (folders.length === 0) {
+        document.getElementById('noPhotosMessage').classList.remove('hidden');
+        return;
+      }
+      const container = document.getElementById('photoFolders');
+      container.classList.remove('hidden');
+      container.innerHTML = folders.map(folder => `
+        <button onclick="openPhotoFolder('${folder.id}', '${folder.name}')" class="photo-folder bg-white rounded-2xl p-6 shadow-lg text-center">
+          <svg class="w-12 h-12 mx-auto mb-3" fill="#1e3a5f" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+          <h3 class="font-semibold text-gray-800">${folder.name}</h3>
+        </button>
+      `).join('');
+    }
+
+    async function openPhotoFolder(folderId, folderName) {
+      showPage('photoGalleryPage');
+      document.getElementById('galleryTitle').textContent = `Foto Absen: ${folderName}`;
+      if (cachedPhotos[folderId] && cachedPhotos[folderId].length > 0) {
+        document.getElementById('photoGalleryLoading').classList.add('hidden');
+        document.getElementById('photoGallery').classList.remove('hidden');
+        renderPhotoGallery(cachedPhotos[folderId]);
+        fetchPhotosFromFolder(folderId).then(photos => { if (photos && photos.length > 0) { cachedPhotos[folderId] = photos; renderPhotoGallery(photos); } });
+        return;
+      }
+      document.getElementById('photoGallery').classList.add('hidden');
+      document.getElementById('photoGalleryLoading').classList.remove('hidden');
+      const photos = await fetchPhotosFromFolder(folderId);
+      document.getElementById('photoGalleryLoading').classList.add('hidden');
+      document.getElementById('photoGallery').classList.remove('hidden');
+      cachedPhotos[folderId] = photos;
+      renderPhotoGallery(photos);
+    }
+
+    async function fetchPhotosFromFolder(folderId) {
+      if (!GOOGLE_SCRIPT_URL) return [];
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getPhotos&folderId=${folderId}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        return data.success ? data.photos : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function renderPhotoGallery(photos) {
+      document.getElementById('photoGalleryLoading').classList.add('hidden');
+      if (photos.length === 0) {
+        document.getElementById('photoGallery').innerHTML = '<p class="col-span-full text-center text-gray-300 py-8">Tidak ada foto di folder ini</p>';
+        return;
+      }
+      const container = document.getElementById('photoGallery');
+      container.innerHTML = photos.map((photo, index) => `
+        <div class="gallery-photo rounded-xl overflow-hidden shadow-lg cursor-pointer" onclick="viewGalleryPhoto(${index})">
+          <img src="${photo.thumbnailUrl}" alt="Foto" class="w-full h-32 object-cover">
+        </div>
+      `).join('');
+      window.galleryPhotos = photos.map(p => p.fullUrl);
+    }
+
+    function viewGalleryPhoto(index) {
+      if (window.galleryPhotos) openPhotoViewer(index, window.galleryPhotos);
+    }
+
+    // ==================== LOGIN ====================
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      if (username === 'archipelago' && password === 'balivibes') {
+        document.getElementById('loginError').classList.add('hidden');
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memuat...';
+        
+        await fetchWorkersFromSheet();
+        renderWorkerGrid();
+        getCurrentLocation();
+        
+        showPage('absensiPage');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+        showToast('Login berhasil! Selamat datang.');
+      } else {
+        document.getElementById('loginError').classList.remove('hidden');
+      }
+    });
+
+    // ==================== ELEMENT SDK INIT ====================
+    async function initApp() {
+      if (window.elementSdk) {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (cfg) => {
+            config = { ...defaultConfig, ...cfg };
+            const appTitleHeader = document.getElementById('appTitleHeader');
+            if (appTitleHeader) appTitleHeader.textContent = config.app_title || defaultConfig.app_title;
+            const companyNameLogin = document.getElementById('companyNameLogin');
+            if (companyNameLogin) companyNameLogin.textContent = config.company_name || defaultConfig.company_name;
+          },
+          mapToCapabilities: (cfg) => ({ recolorables: [], borderables: [], fontEditable: undefined, fontSizeable: undefined }),
+          mapToEditPanelValues: (cfg) => new Map([
+            ['app_title', cfg.app_title || defaultConfig.app_title],
+            ['company_name', cfg.company_name || defaultConfig.company_name]
+          ])
+        });
+      }
+    }
+    
+    initApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b70c32f563de9d5',t:'MTc2NzI1NzM1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
